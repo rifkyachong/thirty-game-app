@@ -1,0 +1,13 @@
+Day 0 - Try to find Inspiration
+Day 1 - Cuman pusingin gimana cara bikin gamenya. Nonton Anime, Ambil air, sama reflecting kayak hari kemarin biar jadi orang yang paham diri aja. 
+
+I learned that it's hard to find job if i don't have relation. I am getting more worried after that. 
+
+Gua inget banget saat saat gua bimbang memilih masa depan gua. Hari demi hari berlalu dan gua semakin sangat khawatir dan insecure. Di saat itulah gua memutuskan untuk belajar coding dan berkomitmen untuk menantang diri untuk mengambil karir pertama gua sebagai programmer atau software developer padahal gua kan jurusan Teknik sipil.
+
+The only way so that I can change is to start have a glimpse that I am not in such a normal situation to bear and start to think that my situation is suck and I need to get out of this. I am salute to my past self because that count for action or making decision and it actually change my life and more importantly, my action, the formula i am looking for. 
+
+16 March, The secret to change is by doing. I do not think through living. The thing after I always do after intense reflection and rumination is what actually changed me. I wonder if I've been doing the right thing. 
+
+Day 2 ~ 6 
+I create basic physics for the game.
