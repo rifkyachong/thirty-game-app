@@ -56,6 +56,10 @@ const gameArea = {
       cursorInfo.innerHTML = `<p>x: ${this.x}<br>y: ${this.y}`;
     });
 
+    window.addEventListener("mouseup", (e) => {
+      releaseTile();
+    });
+
     this.canvas.addEventListener("mouseover", (e) => {
       this.isHovered = true;
     });
@@ -71,13 +75,19 @@ const gameArea = {
   },
   intervalID: null,
   clear: function () {
-    const [canvasHeight, canvasWidth] = [this.canvas.width, this.canvas.height];
+    const [canvasWidth, canvasHeight] = [this.canvas.width, this.canvas.height];
     this.context.clearRect(0, 0, canvasWidth, canvasHeight);
   },
   tileGrid: [[]],
   activeTile: null,
   getXYPosition: function () {
     return [gameArea.x, gameArea.y];
+  },
+  getCenterPointOfGrid: function (row, column) {
+    return [
+      (column + 0.5) * tileGridOptions.columnWidth,
+      (row + 0.5) * tileGridOptions.rowHeight,
+    ];
   },
   getRowColumnPosition: function () {
     let column = Math.min(
@@ -92,6 +102,14 @@ const gameArea = {
   },
   getTileInGrid: function (row, col) {
     return gameArea.tileGrid[row] && gameArea.tileGrid[row][col];
+  },
+  isValidGrid: function (row, col) {
+    return (
+      0 <= row &&
+      row < tileGridOptions.nRow &&
+      0 <= col &&
+      col < tileGridOptions.nCol
+    );
   },
 };
 
