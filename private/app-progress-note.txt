@@ -91,7 +91,7 @@ fallTile () {
   1. initialize speed
   2. update y position
   3. update to new tile grid
-  4.  
+  4. 
 }
 
 
@@ -118,3 +118,28 @@ examples:
 2. click on combining tile
 
 
+
+falling of single tile
+
+initialize speedY
+calculateNewYPosition
+get row based on bottom part oftile
+if row position changed
+  if previous row position is not bottom Free and y position exceeding tile below it
+    falling process stopped
+  else 
+    detachFromGrid
+    attachToNewGrid
+    dont forget to change row tile row position (or probably already handled in attachTONEwGridFn)
+
+
+
+3 types of combining tile
+1. active combining
+2. indirect active
+3. passive combining (fall) 
+
+24 Marr
+honestly, I feel like a failure today.
+25 March
+well, today is a time where i have to reflect for the entire day what the hell am i doing. 

@@ -57,7 +57,9 @@ const gameArea = {
     });
 
     window.addEventListener("mouseup", (e) => {
-      releaseTile();
+      if (e.button == 0 && this.activeTile) {
+        releaseTile(this.activeTile);
+      }
     });
 
     this.canvas.addEventListener("mouseover", (e) => {
@@ -79,6 +81,7 @@ const gameArea = {
     this.context.clearRect(0, 0, canvasWidth, canvasHeight);
   },
   tileGrid: [[]],
+  fallingTiles: [],
   activeTile: null,
   getXYPosition: function () {
     return [gameArea.x, gameArea.y];
@@ -120,11 +123,19 @@ function reRenderGameArea() {
     handleActiveTile(gameArea.activeTile);
   }
 
+  if (gameArea.fallingTiles.length > 0) {
+    handleFallingTiles(gameArea.fallingTiles);
+  }
+
   gameArea.tileGrid
     .flat()
     .filter((item) => item instanceof Tile)
     .forEach((tile) => tile.render());
 
+  gameArea.fallingTiles
+    .flat()
+    .filter((item) => item instanceof Tile)
+    .forEach((tile) => tile.render());
   gameArea.intervalId = window.requestAnimationFrame(reRenderGameArea);
 }
 
