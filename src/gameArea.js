@@ -114,6 +114,20 @@ const gameArea = {
       col < tileGridOptions.nCol
     );
   },
+  addFallingTiles: function (...addedGroupTiles) {
+    addedGroupTiles.forEach((groupTile) => {
+      if (!this.fallingTilesContains(groupTile)) {
+        this.fallingTiles.push(groupTile);
+      }
+    });
+  },
+  fallingTilesContains: function (addedGroupTile) {
+    let isContains = this.fallingTiles.some((groupTile) => {
+      return groupTile.every((tile) => addedGroupTile.includes(tile));
+    });
+
+    return isContains;
+  },
 };
 
 function reRenderGameArea() {
