@@ -5,9 +5,11 @@ tileGridOptions = {
   columnWidth: 70,
 };
 
-const Tile = require("./Tile");
+let num1 = [5];
 
-let tile1 = new Tile(1, 1, 1, "red");
-let tile2 = tile1;
+function inc(num) {
+  num[0] += 1;
+}
 
-console.log(tile1 === tile2);
+inc(num1);
+console.log(num1);

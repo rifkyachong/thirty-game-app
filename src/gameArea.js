@@ -121,12 +121,27 @@ const gameArea = {
       }
     });
   },
-  fallingTilesContains: function (addedGroupTile) {
+  fallingTilesContains: function (testedGroupTile) {
     let isContains = this.fallingTiles.some((groupTile) => {
-      return groupTile.every((tile) => addedGroupTile.includes(tile));
+      return groupTile.every((tile) => testedGroupTile.includes(tile));
     });
 
     return isContains;
+  },
+  removeFallingTiles: function (...removedGroupTile) {
+    removedGroupTile.forEach((groupTile) => {
+      groupTile.forEach((tile) => {
+        tile.speedY = null;
+        tile.isFalling = false;
+      });
+
+      const removedIndex = gameArea.fallingTiles.findIndex((gTile) =>
+        gTile.every((tile) => groupTile.includes(tile))
+      );
+      if (removedIndex !== -1) {
+        gameArea.fallingTiles.splice(removedIndex, 1);
+      }
+    });
   },
 };
 
@@ -150,6 +165,7 @@ function reRenderGameArea() {
     .flat()
     .filter((item) => item instanceof Tile)
     .forEach((tile) => tile.render());
+
   gameArea.intervalId = window.requestAnimationFrame(reRenderGameArea);
 }
 

@@ -57,6 +57,52 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
   this.getRowColumnPosition = function () {
     return [this.row, this.column];
   };
+  this.getTilesStackedAbove = function () {
+    const tiles = this.getAllGroupMembers();
+    let stackedTile = [];
+    tiles.forEach((tile) => {
+      let { topTile } = tile.getAdjacentTile();
+      if (topTile && !tiles.includes(topTile)) {
+        if (
+          !this.tileIsAlreadyIncluded(stackedTile, topTile.getAllGroupMembers())
+        )
+          stackedTile.push(topTile.getAllGroupMembers());
+      }
+    });
+    return stackedTile;
+  };
+  this.getTilesStackedBelow = function () {
+    const tiles = this.getAllGroupMembers();
+    let stackedTile = [];
+    tiles.forEach((tile) => {
+      let { bottomTile } = tile.getAdjacentTile();
+      if (bottomTile && !tiles.includes(bottomTile)) {
+        if (
+          !this.tileIsAlreadyIncluded(
+            stackedTile,
+            bottomTile.getAllGroupMembers()
+          )
+        )
+          stackedTile.push(bottomTile.getAllGroupMembers());
+      }
+    });
+    return stackedTile;
+  };
+  this.getAllTilesStackedAbove = function () {
+    let allStackedTile = [];
+    let tileQueue = [this];
+    while (tileQueue.length > 0) {
+      let tile = tileQueue.pop();
+      let stackedTile = tile.getTilesStackedAbove();
+      stackedTile.forEach((groupTile) => {
+        if (!this.tileIsAlreadyIncluded(allStackedTile, groupTile)) {
+          allStackedTile.push(groupTile);
+          tileQueue.push(groupTile[0]);
+        }
+      });
+    }
+    return allStackedTile;
+  };
   this.hasCursorInside = function () {
     let [cursorX, cursorY] = gameArea.getXYPosition();
     let hasCursorInside = false;
@@ -75,6 +121,10 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
   };
   this.isSameNumberWith = function (tile) {
     return this.number === tile.number;
+  };
+  this.isOnBottom = function () {
+    const groupTile = this.getAllGroupMembers();
+    return groupTile.some((tile) => tile.row === tileGridOptions.nRow - 1);
   };
   this.render = function () {
     gameArea.context.fillStyle = this.color;
@@ -128,6 +178,111 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
       tile.color = this.color;
     }
   };
+  this.seperateFromGroup = function () {
+    let seperatedTiles = [];
+    if (this.ties.top instanceof Tile) {
+      let otherTile = this.ties.top;
+      otherTile.ties.bottom = null;
+      this.ties.top = null;
+      seperatedTiles.push(otherTile);
+    }
+    if (this.ties.bottom instanceof Tile) {
+      let otherTile = this.ties.bottom;
+      otherTile.ties.top = null;
+      this.ties.bottom = null;
+      seperatedTiles.push(otherTile);
+    }
+    if (this.ties.left instanceof Tile) {
+      let otherTile = this.ties.left;
+      otherTile.ties.right = null;
+      this.ties.left = null;
+      seperatedTiles.push(otherTile);
+    }
+    if (this.ties.right instanceof Tile) {
+      let otherTile = this.ties.right;
+      otherTile.ties.left = null;
+      this.ties.right = null;
+      seperatedTiles.push(otherTile);
+    }
+    return seperatedTiles.map((tile) => tile.getAllGroupMembers());
+  };
+  this.detachFromGrid = function () {
+    const tiles = this.getAllGroupMembers();
+    tiles.forEach((tile) => {
+      const detachedTile = gameArea.tileGrid[tile.row][tile.column];
+      if (tiles.includes(detachedTile)) {
+        gameArea.tileGrid[tile.row][tile.column] = null;
+      }
+    });
+  };
+  this.moveToCoordinate = function (newX, newY) {
+    const tiles = this.getAllGroupMembers();
+    let xChange = newX - this.x;
+    let yChange = newY - this.y;
+    tiles.forEach((tile) => {
+      tile.x += xChange;
+      tile.y += yChange;
+    });
+  };
+  this.moveTowardsCursor = function () {
+    // customize
+    const restrictedMoveSensitivity = 0.1;
+    const maxOffset = 10; //px
+
+    const { topFree, bottomFree, leftFree, rightFree } =
+      this.checkGroupMoveability();
+    let [gridCenterX, gridCenterY] = gameArea.getCenterPointOfGrid(
+      this.row,
+      this.column
+    );
+
+    let [cursorX, cursorY] = gameArea.getXYPosition();
+    let [tileCenterX, tileCenterY] = [cursorX, cursorY];
+
+    if (!rightFree && cursorX > gridCenterX) {
+      tileCenterX =
+        gridCenterX +
+        Math.min(
+          (cursorX - gridCenterX) * restrictedMoveSensitivity,
+          maxOffset
+        );
+    }
+    if (!leftFree && cursorX < gridCenterX) {
+      tileCenterX =
+        gridCenterX +
+        Math.max(
+          (cursorX - gridCenterX) * restrictedMoveSensitivity,
+          -maxOffset
+        );
+    }
+    if (!bottomFree && cursorY > gridCenterY) {
+      tileCenterY =
+        gridCenterY +
+        Math.min(
+          (cursorY - gridCenterY) * restrictedMoveSensitivity,
+          maxOffset
+        );
+    }
+    if (!topFree && cursorY < gridCenterY) {
+      tileCenterY =
+        gridCenterY +
+        Math.max(
+          (cursorY - gridCenterY) * restrictedMoveSensitivity,
+          -maxOffset
+        );
+    }
+    this.moveToCoordinate(
+      tileCenterX - this.width * 0.5,
+      tileCenterY - this.height * 0.5
+    );
+  };
+  this.snapToGrid = function () {
+    this.moveToCoordinate(
+      this.column * tileGridOptions.columnWidth,
+      this.row * tileGridOptions.rowHeight
+    );
+  };
+  /////////////////////////////////////////////////////////////
   this.checkTileMoveability = function () {
     const { topTile, bottomTile, leftTile, rightTile } = this.getAdjacentTile();
     let tileMoveability = {
@@ -185,11 +340,11 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
     });
     return groupMoveability;
   };
-  /////////////////////////////////////////////////////////////
   this.isGrabable = function () {
     return true;
   };
   this.attachToGrid = function (newRow, newColumn) {
+    // attach to grid can cause unintended replace of tile
     const tiles = this.getAllGroupMembers();
     let rowChange = newRow - this.row;
     let columnChange = newColumn - this.column;
@@ -218,94 +373,22 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
       // if there is a same tile, perform tile increment
     });
   };
-  this.detachFromGrid = function () {
-    const tiles = this.getAllGroupMembers();
-    tiles.forEach((tile) => {
-      const detachedTile = gameArea.tileGrid[tile.row][tile.column];
-      if (tiles.includes(detachedTile)) {
-        gameArea.tileGrid[tile.row][tile.column] = null;
-      }
-    });
-  };
-  this.moveToGrid = function (newRow, newColumn) {
-    if (
-      gameArea.tileGrid[newRow] &&
-      newCol < tileGridOptions.nCol &&
-      newCol >= 0
-    ) {
-      const replacedTile = gameArea.tileGrid[newRow][newColumn];
-      gameArea.tileGrid[(this.row, this.column)] = null;
-      if (replacedTile && replacedTile.isSameNumberWith(this)) {
-        // combine tile
-        return;
-      }
-      gameArea.tileGrid[newRow][newCol] = this;
-    }
-  };
-  this.moveToCoordinate = function (newX, newY) {
-    const tiles = this.getAllGroupMembers();
-    let xChange = newX - this.x;
-    let yChange = newY - this.y;
-    tiles.forEach((tile) => {
-      tile.x += xChange;
-      tile.y += yChange;
-    });
-  };
-  this.moveToCursor = function () {
-    // customize
-    const restrictedMoveSensitivity = 0.1;
-    const maxOffset = 10; //px
-    const { topFree, bottomFree, leftFree, rightFree } =
-      this.checkGroupMoveability();
-    let [gridCenterX, gridCenterY] = gameArea.getCenterPointOfGrid(
-      this.row,
-      this.column
-    );
-    let [cursorX, cursorY] = gameArea.getXYPosition();
-    let [tileCenterX, tileCenterY] = [cursorX, cursorY];
-    if (!rightFree && cursorX > gridCenterX) {
-      tileCenterX =
-        gridCenterX +
-        Math.min(
-          (cursorX - gridCenterX) * restrictedMoveSensitivity,
-          maxOffset
-        );
-    }
-    if (!leftFree && cursorX < gridCenterX) {
-      tileCenterX =
-        gridCenterX +
-        Math.max(
-          (cursorX - gridCenterX) * restrictedMoveSensitivity,
-          -maxOffset
-        );
-    }
-    if (!bottomFree && cursorY > gridCenterY) {
-      tileCenterY =
-        gridCenterY +
-        Math.min(
-          (cursorY - gridCenterY) * restrictedMoveSensitivity,
-          maxOffset
-        );
-    }
-    if (!topFree && cursorY < gridCenterY) {
-      tileCenterY =
-        gridCenterY +
-        Math.max(
-          (cursorY - gridCenterY) * restrictedMoveSensitivity,
-          -maxOffset
-        );
-    }
-    this.moveToCoordinate(
-      tileCenterX - this.width * 0.5,
-      tileCenterY - this.height * 0.5
-    );
-  };
-  this.snapToGrid = function () {
-    this.moveToCoordinate(
-      this.column * tileGridOptions.columnWidth,
-      this.row * tileGridOptions.rowHeight
-    );
-  };
+  // this.moveToGrid = function (newRow, newColumn) {
+  //   if (
+  //     gameArea.tileGrid[newRow] &&
+  //     newCol < tileGridOptions.nCol &&
+  //     newCol >= 0
+  //   ) {
+  //     const replacedTile = gameArea.tileGrid[newRow][newColumn];
+  //     gameArea.tileGrid[(this.row, this.column)] = null;
+  //     if (replacedTile && replacedTile.isSameNumberWith(this)) {
+  //       // combine tile
+  //       return;
+  //     }
+  //     gameArea.tileGrid[newRow][newCol] = this;
+  //   }
+  // };
+
   this.determineNewPosition = function () {
     const [hoveredRow, hoveredColumn] = gameArea.getRowColumnPosition();
     const [prevRow, prevColumn] = [this.row, this.column];
@@ -410,51 +493,33 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
     return isAvailable;
   };
   /////////////////////////////////////////////////////////////
+
   this.incrementTileNumberFrom = function (sacrificedTile) {
-    let seperatedTiles;
-    let allStackedTiles;
-
     this.number += 1;
-    seperatedTiles = this.seperateFromGroup();
-    gameArea.addFallingTiles(...seperatedTiles, [this]);
 
-    seperatedTiles = sacrificedTile.seperateFromGroup();
+    gameArea.removeFallingTiles(
+      this.getAllGroupMembers(),
+      ...this.getAllTilesStackedAbove()
+    );
+    gameArea.removeFallingTiles(
+      sacrificedTile.getAllGroupMembers(),
+      ...sacrificedTile.getAllTilesStackedAbove()
+    );
+
+    let stackedTiles = sacrificedTile.getAllTilesStackedAbove();
+    // stackedTiles.forEach((groupTile) => {
+    //   groupTile[0].resetFall();
+    // });
+    let seperatedTiles = sacrificedTile.seperateFromGroup();
     gameArea.addFallingTiles(...seperatedTiles);
+
+    stackedTiles = this.getAllTilesStackedAbove();
+    seperatedTiles = this.seperateFromGroup();
+    gameArea.addFallingTiles([this], ...seperatedTiles, ...stackedTiles);
+
     if (gameArea.activeTile === sacrificedTile) {
       gameArea.activeTile = null;
     }
-    seperatedTiles.forEach((groupTile) => groupTile[0].snapToYaxis());
-
-    allStackedTiles = this.getAllTilesStackedAbove();
-    gameArea.addFallingTiles(...allStackedTiles);
-  };
-  this.seperateFromGroup = function () {
-    let seperatedTiles = [];
-    if (this.ties.top instanceof Tile) {
-      let otherTile = this.ties.top;
-      otherTile.ties.bottom = null;
-      this.ties.top = null;
-      seperatedTiles.push(otherTile);
-    }
-    if (this.ties.bottom instanceof Tile) {
-      let otherTile = this.ties.bottom;
-      otherTile.ties.top = null;
-      this.ties.bottom = null;
-      seperatedTiles.push(otherTile);
-    }
-    if (this.ties.left instanceof Tile) {
-      let otherTile = this.ties.left;
-      otherTile.ties.right = null;
-      this.ties.left = null;
-      seperatedTiles.push(otherTile);
-    }
-    if (this.ties.right instanceof Tile) {
-      let otherTile = this.ties.right;
-      otherTile.ties.left = null;
-      this.ties.right = null;
-      seperatedTiles.push(otherTile);
-    }
-    return seperatedTiles.map((tile) => tile.getAllGroupMembers());
   };
 
   /////////////////////////////////////////////////////////////
@@ -462,7 +527,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
     const tiles = this.getAllGroupMembers();
     tiles.forEach((tile) => {
       tile.speedY = 0;
-      tile.isFalling = 0;
+      tile.isFalling = true;
     });
   };
   this.setNewYPosition = function () {
@@ -485,31 +550,43 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
     });
     this.snapToGrid();
   };
-  this.isAbleToFall = function () {
-    const { bottomFree } = this.checkGroupMoveability();
-    let bottomTiles = [];
+  this.resetFall = function () {
     const tiles = this.getAllGroupMembers();
     tiles.forEach((tile) => {
-      let { bottomTile } = tile.getAdjacentTile();
-      if (bottomTile && !tiles.includes(bottomTile)) {
-        bottomTiles.push(bottomTile);
+      tile.speedY = 0;
+    });
+  };
+  this.isAbleToFall = function () {
+    if (this.isOnBottom()) {
+      return false;
+    }
+
+    let bottomTiles = this.getTilesStackedBelow();
+    let activeTile = gameArea.activeTile;
+
+    if (bottomTiles.length === 0) {
+      return true;
+    }
+
+    let isBottomFree = true;
+
+    bottomTiles.forEach((groupTile) => {
+      if (!gameArea.fallingTilesContains(groupTile)) {
+        if (activeTile && groupTile.includes(activeTile)) {
+          let { bottomFree } = activeTile.checkGroupMoveability();
+          if (!bottomFree) {
+            isBottomFree = false;
+          }
+        } else {
+          let { bottomFree } = this.checkGroupMoveability();
+          if (!bottomFree) {
+            isBottomFree = false;
+          }
+        }
       }
     });
-    const bottomTilesIsFalling = bottomTiles.reduce(
-      (currentStatus, bottomTile) => {
-        return (
-          currentStatus &&
-          gameArea.fallingTilesContains(bottomTile.getAllGroupMembers())
-        );
-      },
-      true
-    );
 
-    const bottomIsReached = tiles.reduce((currentStatus, tile) => {
-      return currentStatus || tile.row === tileGridOptions.nRow - 1;
-    }, false);
-
-    return bottomFree || (!bottomIsReached && bottomTilesIsFalling);
+    return isBottomFree;
   };
   this.checkForMatchingTile = function (testRow, testColumn) {
     const tiles = this.getAllGroupMembers();
@@ -532,36 +609,6 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
     });
     return matchedTile.length;
   };
-  /////////////////////////////////////////////////////////////
-  this.getTilesStackedAbove = function () {
-    const tiles = this.getAllGroupMembers();
-    let stackedTile = [];
-    tiles.forEach((tile) => {
-      let { topTile } = tile.getAdjacentTile();
-      if (topTile && !tiles.includes(topTile)) {
-        if (
-          !this.tileIsAlreadyIncluded(stackedTile, topTile.getAllGroupMembers())
-        )
-          stackedTile.push(topTile.getAllGroupMembers());
-      }
-    });
-    return stackedTile;
-  };
-  this.getAllTilesStackedAbove = function () {
-    let allStackedTile = [];
-    let tileQueue = [this];
-    while (tileQueue.length > 0) {
-      let tile = tileQueue.pop();
-      let stackedTile = tile.getTilesStackedAbove();
-      stackedTile.forEach((groupTile) => {
-        if (!this.tileIsAlreadyIncluded(allStackedTile, groupTile)) {
-          allStackedTile.push(groupTile);
-          tileQueue.push(groupTile[0]);
-        }
-      });
-    }
-    return allStackedTile;
-  };
   this.tileIsAlreadyIncluded = function (groupTileArr, newGroupTile) {
     let isAlreadyIncluded = groupTileArr.some((groupTile) => {
       return groupTile.every((tile) => newGroupTile.includes(tile));
@@ -575,28 +622,29 @@ const handleActiveTile = (activeTile) => {
   let [newRow, newColumn] = gameArea.getRowColumnPosition();
   const numberOfGridStep =
     Math.abs(newRow - prevRow) + Math.abs(newColumn - prevColumn);
+
+  let allStackedTile = activeTile.getAllTilesStackedAbove();
+  gameArea.addFallingTiles(...allStackedTile);
+
   if (numberOfGridStep > 0) {
     let [newRow, newColumn] = activeTile.determineNewPosition();
+
     activeTile.detachFromGrid();
-    if (newColumn !== prevColumn) {
-      //horizontal movement, check for potential fall in the stacked tile above previous position
-      let allStackedTile = activeTile.getAllTilesStackedAbove();
-      gameArea.addFallingTiles(...allStackedTile);
-    }
+
     activeTile.attachToGrid(newRow, newColumn);
   }
-  activeTile.moveToCursor();
+  activeTile.moveTowardsCursor();
 };
 
-const handleFallingTiles = (fallingTiles) => {
-  gameArea.fallingTiles = [];
-  let newFallingTiles = [];
+const handleFallingTiles = ([...fallingTiles]) => {
   fallingTiles.forEach((groupTile) => {
     const representativeTile = groupTile[0];
     if (representativeTile.speedY === null) {
       representativeTile.initializeFall();
     }
+
     representativeTile.setNewYPosition();
+
     let prevRow = representativeTile.row;
     let prevColumn = representativeTile.column;
     let newRow = Math.floor(
@@ -606,6 +654,7 @@ const handleFallingTiles = (fallingTiles) => {
 
     if (prevRow !== newRow) {
       if (representativeTile.checkForMatchingTile(prevRow, prevColumn)) {
+        gameArea.removeFallingTiles(groupTile);
         return;
       }
       if (representativeTile.isAbleToFall()) {
@@ -613,12 +662,11 @@ const handleFallingTiles = (fallingTiles) => {
         representativeTile.attachToGrid(newRow, prevColumn);
       } else {
         representativeTile.stopFalling();
+        gameArea.removeFallingTiles(groupTile);
         return;
       }
     }
-    newFallingTiles.push(groupTile);
   });
-  gameArea.fallingTiles.push(...newFallingTiles);
 };
 
 const grabTile = () => {

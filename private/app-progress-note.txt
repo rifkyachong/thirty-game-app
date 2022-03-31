@@ -139,7 +139,6 @@ if row position changed
 2. indirect active
 3. passive combining (fall) 
 
-24 Marr
-honestly, I feel like a failure today.
-25 March
-well, today is a time where i have to reflect for the entire day what the hell am i doing. 
+
+
+do we really need of activeTile checking in checkTileMoveability methods?
