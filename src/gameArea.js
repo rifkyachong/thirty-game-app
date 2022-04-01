@@ -116,10 +116,18 @@ const gameArea = {
   },
   addFallingTiles: function (...addedGroupTiles) {
     addedGroupTiles.forEach((groupTile) => {
-      if (!this.fallingTilesContains(groupTile)) {
-        this.fallingTiles.push(groupTile);
-      }
+      this.fallingTiles.push(groupTile);
+      groupTile.forEach((tile) => {
+        tile.isFalling = true;
+        tile.speedY = 0;
+      });
     });
+
+    // addedGroupTiles.forEach((groupTile) => {
+    //   if (!this.fallingTilesContains(groupTile)) {
+    //     this.fallingTiles.push(groupTile);
+    //   }
+    // });
   },
   fallingTilesContains: function (testedGroupTile) {
     let isContains = this.fallingTiles.some((groupTile) => {
@@ -130,9 +138,11 @@ const gameArea = {
   },
   removeFallingTiles: function (...removedGroupTile) {
     removedGroupTile.forEach((groupTile) => {
+      groupTile[0].snapToGrid();
+
       groupTile.forEach((tile) => {
-        tile.speedY = null;
         tile.isFalling = false;
+        tile.speedY = null;
       });
 
       const removedIndex = gameArea.fallingTiles.findIndex((gTile) =>
@@ -142,6 +152,24 @@ const gameArea = {
         gameArea.fallingTiles.splice(removedIndex, 1);
       }
     });
+  },
+  detectFallingTiles: function () {
+    gameArea.tileGrid
+      .flat()
+      .filter((tile) => tile instanceof Tile)
+      .forEach((checkedTile) => {
+        if (!checkedTile.isFalling && checkedTile !== this.activeTile) {
+          let { bottomFree } = checkedTile.checkGroupMoveability();
+          if (bottomFree) {
+            let tiles = checkedTile.getAllGroupMembers();
+            let stackedTiles = checkedTile.getAllTilesStackedAbove();
+            stackedTiles = stackedTiles.filter(
+              (groupTile) => !groupTile[0].isFalling
+            );
+            this.addFallingTiles(tiles, ...stackedTiles);
+          }
+        }
+      });
   },
 };
 
