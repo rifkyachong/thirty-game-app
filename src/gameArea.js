@@ -73,7 +73,9 @@ const gameArea = {
     initializeSampleTile();
     initializeSampleTies();
 
+    this.gameTimeOrigin = performance.now();
     this.intervalID = window.requestAnimationFrame(reRenderGameArea);
+    this.newRowTimeoutId = setTimeout(insertNewTileRow, 12000);
   },
   intervalID: null,
   clear: function () {
@@ -89,7 +91,7 @@ const gameArea = {
   getCenterPointOfGrid: function (row, column) {
     return [
       (column + 0.5) * tileGridOptions.columnWidth,
-      (row + 0.5) * tileGridOptions.rowHeight,
+      (row + 0.5) * tileGridOptions.rowHeight - this.gridOffsetY,
     ];
   },
   getRowColumnPosition: function () {
@@ -98,7 +100,7 @@ const gameArea = {
       tileGridOptions.nCol - 1
     );
     let row = Math.min(
-      Math.floor(gameArea.y / tileGridOptions.rowHeight),
+      Math.floor((gameArea.y + this.gridOffsetY) / tileGridOptions.rowHeight),
       tileGridOptions.nRow - 1
     );
     return [row, column];
@@ -122,7 +124,6 @@ const gameArea = {
         tile.speedY = 0;
       });
     });
-
     // addedGroupTiles.forEach((groupTile) => {
     //   if (!this.fallingTilesContains(groupTile)) {
     //     this.fallingTiles.push(groupTile);
@@ -138,18 +139,17 @@ const gameArea = {
   },
   removeFallingTiles: function (...removedGroupTile) {
     removedGroupTile.forEach((groupTile) => {
-      groupTile[0].snapToGrid();
-
-      groupTile.forEach((tile) => {
-        tile.isFalling = false;
-        tile.speedY = null;
-      });
-
       const removedIndex = gameArea.fallingTiles.findIndex((gTile) =>
         gTile.every((tile) => groupTile.includes(tile))
       );
       if (removedIndex !== -1) {
         gameArea.fallingTiles.splice(removedIndex, 1);
+        groupTile[0].snapToGrid();
+
+        groupTile.forEach((tile) => {
+          tile.isFalling = false;
+          tile.speedY = null;
+        });
       }
     });
   },
@@ -158,7 +158,13 @@ const gameArea = {
       .flat()
       .filter((tile) => tile instanceof Tile)
       .forEach((checkedTile) => {
-        if (!checkedTile.isFalling && checkedTile !== this.activeTile) {
+        if (!checkedTile.isFalling) {
+          if (
+            this.activeTile &&
+            this.activeTile.getAllGroupMembers().includes(checkedTile)
+          ) {
+            return;
+          }
           let { bottomFree } = checkedTile.checkGroupMoveability();
           if (bottomFree) {
             let tiles = checkedTile.getAllGroupMembers();
@@ -171,10 +177,32 @@ const gameArea = {
         }
       });
   },
+  score: null,
+  gameTimeOrigin: null,
+  gameTimeElapsed: null,
+  lastTileInsertionTime: null,
+  newRowTimeoutId: null,
+  updateScore: function () {
+    let arrayOfTileNumber = gameArea.tileGrid
+      .flat()
+      .filter((tile) => tile instanceof Tile)
+      .map((tile) => tile.number);
+    this.score = Math.max(...arrayOfTileNumber);
+  },
+  onNewRowTransition: false,
+  gridOffsetY: 0,
 };
 
 function reRenderGameArea() {
   gameArea.clear();
+
+  gameArea.updateScore();
+
+  checkForNoMatchAvailable();
+
+  if (gameArea.onNewRowTransition) {
+    newRowTransition();
+  }
 
   if (gameArea.activeTile) {
     handleActiveTile(gameArea.activeTile);
@@ -187,6 +215,11 @@ function reRenderGameArea() {
   gameArea.tileGrid
     .flat()
     .filter((item) => item instanceof Tile)
+    .forEach((tile) => tile.renderTies());
+
+  gameArea.tileGrid
+    .flat()
+    .filter((item) => item instanceof Tile)
     .forEach((tile) => tile.render());
 
   gameArea.fallingTiles
@@ -195,6 +228,91 @@ function reRenderGameArea() {
     .forEach((tile) => tile.render());
 
   gameArea.intervalId = window.requestAnimationFrame(reRenderGameArea);
+}
+
+function insertNewTileRow() {
+  let newTiles = Array(tileGridOptions.nCol)
+    .fill()
+    .map(
+      (el, idx) =>
+        new Tile(
+          tileGridOptions.nRow,
+          idx,
+          Math.floor(Math.random() * (gameArea.score - 1)) + 1,
+          getRandomLightColor()
+        )
+    );
+
+  gameArea.tileGrid.push(newTiles);
+
+  tileGridOptions.nRow += 1;
+
+  gameArea.onNewRowTransition = true;
+  gameArea.lastTileInsertionTime = performance.now();
+  gameArea.newRowTimeoutId = setTimeout(insertNewTileRow, 12000);
+}
+
+function checkForNoMatchAvailable() {
+  let arrayOfNumber = gameArea.tileGrid
+    .flat()
+    .filter((tile) => tile instanceof Tile)
+    .map((tile) => tile.number);
+  let noAvailableMove = new Set(arrayOfNumber).size === arrayOfNumber.length;
+  if (noAvailableMove) {
+    console.log("test");
+    resetInsertNewTileRowTimeout();
+  }
+}
+
+function resetInsertNewTileRowTimeout() {
+  clearTimeout(gameArea.newRowTimeoutId);
+  insertNewTileRow();
+}
+
+function newRowTransition() {
+  let elapsed = performance.now() - gameArea.lastTileInsertionTime;
+  if (elapsed > 1000) {
+    // end transition
+    gameArea.gridOffsetY = 0;
+    gameArea.onNewRowTransition = false;
+    gameArea.tileGrid
+      .flat()
+      .filter((tile) => tile instanceof Tile)
+      .forEach((tile) => {
+        tile.row -= 1;
+        if (!tile.isFalling) {
+          if (
+            gameArea.activeTile &&
+            gameArea.activeTile.getAllGroupMembers().includes(tile)
+          ) {
+            return;
+          }
+          tile.snapToGrid();
+        }
+      });
+    tileGridOptions.nRow -= 1;
+    let topRowTiles = gameArea.tileGrid.shift();
+    if (topRowTiles.some((tile) => tile instanceof Tile)) {
+      console.log("youLOSE!!");
+    }
+    return;
+  }
+  gameArea.gridOffsetY = (elapsed / 1000) * tileGridOptions.rowHeight;
+
+  gameArea.tileGrid
+    .flat()
+    .filter((tile) => tile instanceof Tile)
+    .forEach((tile) => {
+      if (!tile.isFalling) {
+        if (
+          gameArea.activeTile &&
+          gameArea.activeTile.getAllGroupMembers().includes(tile)
+        ) {
+          return;
+        }
+        tile.snapToGrid();
+      }
+    });
 }
 
 gameArea.start();
