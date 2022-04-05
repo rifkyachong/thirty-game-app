@@ -1,5 +1,4 @@
-#root > canvas {
-  background-color: azure;
+#game-area > canvas {
   padding: 8px;
-  border-radius: 8px;
+  
 }

@@ -1,6 +1,10 @@
 const gameArea = {
+  wrapper: document.getElementById("game-area"),
+  gameIntro: document.getElementById("game-intro"),
+  difficultySetting: document.getElementById("difficulty-setting"),
+  openDifficultySettingBtn: document.getElementById("select-difficulty-btn"),
+  startBtn: document.getElementById("start-game-btn"),
   canvas: document.createElement("canvas"),
-  wrapper: document.getElementById("root"),
   context: null,
   x: 0,
   y: 0,
@@ -19,64 +23,115 @@ const gameArea = {
     this.borderTop = this.canvas.clientTop;
     this.borderLeft = this.canvas.clientLeft;
   },
-  start: function () {
+  openGameArea: function () {
     const { nRow, nCol, rowHeight, columnWidth } = tileGridOptions;
-    this.canvas.height = nRow * rowHeight;
-    this.canvas.width = nCol * columnWidth;
-    this.context = this.canvas.getContext("2d");
+    gameArea.canvas.height = nRow * rowHeight;
+    gameArea.canvas.width = nCol * columnWidth;
+    gameArea.context = gameArea.canvas.getContext("2d");
 
-    this.wrapper.append(this.canvas);
-    this.specifyLayoutProperties();
+    gameArea.wrapper.append(gameArea.canvas);
+    gameArea.specifyLayoutProperties();
+    gameArea.wrapper.width = `${
+      gameArea.canvas.width + 2 * gameArea.paddingLeft
+    }px`;
+    gameArea.wrapper.height = `${
+      gameArea.canvas.height + 2 * gameArea.paddingTop
+    }px`;
+
+    gameArea.openDifficultySettingBtn.onclick = gameArea.openDifficultySetting;
+  },
+  openGameIntro: function () {},
+  openDifficultySetting: function () {
+    gameArea.gameIntro.classList.replace("d-block", "d-none");
+    gameArea.difficultySetting.classList.replace("d-none", "d-block");
+
+    let difficultyOptionsBtn = document.querySelectorAll(".difficulty-options");
+    let normalBtn = difficultyOptionsBtn[0];
+    let hardBtn = difficultyOptionsBtn[1];
+    let veryHardBtn = difficultyOptionsBtn[2];
+
+    let resetDifficulty = () => {
+      difficultyOptionsBtn.forEach((btn) => {
+        btn.classList.remove("selected");
+      });
+    };
+
+    normalBtn.onclick = () => {
+      gameArea.mode = "normal";
+      resetDifficulty();
+      normalBtn.classList.add("selected");
+      gameArea.startBtn.disabled = false;
+    };
+    hardBtn.onclick = () => {
+      gameArea.mode = "hard";
+      resetDifficulty();
+      hardBtn.classList.add("selected");
+      gameArea.startBtn.disabled = false;
+    };
+    veryHardBtn.onclick = () => {
+      gameArea.mode = "very hard";
+      resetDifficulty();
+      veryHardBtn.classList.add("selected");
+      gameArea.startBtn.disabled = false;
+    };
+
+    gameArea.startBtn.onclick = gameArea.start;
+  },
+  start: function () {
+    gameArea.difficultySetting.classList.replace("d-block", "d-none");
 
     window.addEventListener("mousedown", (e) => {
-      if (e.button == 0 && this.isHovered) {
+      if (e.button == 0 && gameArea.isHovered) {
         grabTile();
       }
     });
 
     window.addEventListener("mousemove", (e) => {
-      this.x =
+      gameArea.x =
         e.clientX -
-        this.paddingLeft -
-        this.borderLeft -
-        this.canvas.getBoundingClientRect().left;
-      this.y =
+        gameArea.paddingLeft -
+        gameArea.borderLeft -
+        gameArea.canvas.getBoundingClientRect().left;
+      gameArea.y =
         e.clientY -
-        this.paddingTop -
-        this.borderTop -
-        this.canvas.getBoundingClientRect().top;
+        gameArea.paddingTop -
+        gameArea.borderTop -
+        gameArea.canvas.getBoundingClientRect().top;
 
-      this.x = Math.min(this.x, this.canvas.width);
-      this.x = Math.max(0, this.x);
+      gameArea.x = Math.min(gameArea.x, gameArea.canvas.width);
+      gameArea.x = Math.max(0, gameArea.x);
 
-      this.y = Math.min(this.y, this.canvas.height);
-      this.y = Math.max(0, this.y);
+      gameArea.y = Math.min(gameArea.y, gameArea.canvas.height);
+      gameArea.y = Math.max(0, gameArea.y);
 
       const cursorInfo = document.getElementById("cursor-info");
-      cursorInfo.innerHTML = `<p>x: ${this.x}<br>y: ${this.y}`;
+      cursorInfo.innerHTML = `<p>x: ${gameArea.x}<br>y: ${gameArea.y}`;
     });
 
     window.addEventListener("mouseup", (e) => {
-      if (e.button == 0 && this.activeTile) {
-        releaseTile(this.activeTile);
+      if (e.button == 0 && gameArea.activeTile) {
+        releaseTile(gameArea.activeTile);
       }
     });
 
-    this.canvas.addEventListener("mouseover", (e) => {
-      this.isHovered = true;
+    gameArea.canvas.addEventListener("mouseover", (e) => {
+      gameArea.isHovered = true;
     });
 
-    this.canvas.addEventListener("mouseout", (e) => {
-      this.isHovered = false;
+    gameArea.canvas.addEventListener("mouseout", (e) => {
+      gameArea.isHovered = false;
     });
 
     initializeSampleTile();
     initializeSampleTies();
 
-    this.gameTimeOrigin = performance.now();
-    this.intervalID = window.requestAnimationFrame(reRenderGameArea);
-    this.newRowTimeoutId = setTimeout(insertNewTileRow, 12000);
+    gameArea.gameTimeOrigin = performance.now();
+    gameArea.lastTileInsertionTime = performance.now();
+    gameArea.intervalID = window.requestAnimationFrame(reRenderGameArea);
+    gameArea.newRowTimeoutId = setTimeout(insertNewTileRow, 12000);
   },
+  pause: function () {},
+  terminateGame: function () {},
   intervalID: null,
   clear: function () {
     const [canvasWidth, canvasHeight] = [this.canvas.width, this.canvas.height];
@@ -191,13 +246,24 @@ const gameArea = {
   },
   onNewRowTransition: false,
   gridOffsetY: 0,
+  mode: null,
+  starDifficulty: 0,
+  TimerBar: document.getElementById("time-bar"),
+  renderTimer: function () {
+    let timeLeft = this.lastTileInsertionTime + 12000 - performance.now();
+    let totalTime = 12000;
+    let color1 = "#C0C0C0";
+    let color2 = "#989898";
+    let color1WidthSection = (timeLeft / totalTime) * 100;
+    this.TimerBar.style.backgroundImage = `linear-gradient(to right, ${color1} ${color1WidthSection}%, ${color2} ${color1WidthSection}%)`;
+  },
 };
 
 function reRenderGameArea() {
   gameArea.clear();
 
   gameArea.updateScore();
-
+  gameArea.renderTimer();
   checkForNoMatchAvailable();
 
   if (gameArea.onNewRowTransition) {
@@ -315,4 +381,4 @@ function newRowTransition() {
     });
 }
 
-gameArea.start();
+gameArea.openGameArea();

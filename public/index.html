@@ -5,12 +5,61 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" href="../src/index.css">
   <link rel="stylesheet" href="../src/canvas.css">
 </head>
 <body>
-  <div id="root"></div>
-  <div id="cursor-info">
-  </div> 
+  <main class="d-flex">
+    <div id="game-container">
+      <div id="controller"></div>
+      <div id="time-bar"></div>
+      <div id="game-area"> 
+        <div class="p-4 d-block" id="game-intro">
+          <h4 class="text-center">How To Play:</h4>
+          <ul>
+            <li>asdasdasd</li>
+            <li>asdasdasd</li>
+            <li>asdasdasd</li>
+            <li>asdasdasd</li>
+          </ul>
+          <button class="btn text-center fw-bolder d-block mx-auto w-25" id="select-difficulty-btn" style="box-shadow: none; background-color: #FFDAB9;">Start Game</button>
+        </div>
+        <div class="p-4 d-none" id="difficulty-setting">
+          <h4 class="text-center mb-5">Select Difficulty</h4>
+          <button class="difficulty-options btn btn-sm w-50 mx-auto d-block mb-4" id="normal-difficulty" style="background-color: #FFFF80;">
+            <h4>Normal</h4>
+            <p class="mb-0">starts with: 1 star difficulty</p>
+          </button>
+          <button class="difficulty-options btn btn-sm w-50 mx-auto d-block mb-4" id="hard-difficulty" style="background-color: #FFC34D;">
+            <h4>Hard</h4>
+            <p class="mb-0">starts with: 2 star difficulty</p>
+          </button>
+          <button class="difficulty-options btn btn-sm w-50 mx-auto d-block mb-5" id="veryhard-difficulty" style="background-color: #FF6619;">
+            <h4>Very Hard</h4>
+            <p class="mb-0">starts with: 3 star difficulty</p>
+          </button>
+          <button class="btn btn-primary w-25 mx-auto d-block" id="start-game-btn" disabled>Start Game</button>
+        </div>
+        <div id="game-pause"></div> 
+      </div>
+
+    </div>
+    <div class="gameplay-status">
+      <h2 id="title">Thrity Game App</h2>
+      <h4>Score:</h4>
+      <div id="score-tile"></div>
+      <h4>Difficulty</h4>
+      <div id="star-diffuculty-img"></div>
+    </div>
+  </main>
+  <div id="cursor-info"></div> 
+  <footer class="mt-5">
+    <p>Created By Rifky Marcelio</p>
+    <a id="source-code" href="#"><i class="fab fa-github"></i> Source Code</a>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  <script src="https://kit.fontawesome.com/6578082cab.js" crossorigin="anonymous"></script>
   <script src="../src/generateRandomColor.js"></script>
   <script src="../src/gameConfig.js"></script>
   <script src="../src/Tile.js"></script>
