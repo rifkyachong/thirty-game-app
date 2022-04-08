@@ -12,10 +12,12 @@
 <body>
   <main class="d-flex">
     <div id="game-container">
-      <div id="controller"></div>
+      <div id="controller">
+        <button class="btn btn-controller pause-btn" disabled></button>
+      </div>
       <div id="time-bar"></div>
       <div id="game-area"> 
-        <div class="p-4 d-block" id="game-intro">
+        <div class="p-4 d-none" id="game-intro">
           <h4 class="text-center">How To Play:</h4>
           <ul>
             <li>asdasdasd</li>
@@ -24,6 +26,11 @@
             <li>asdasdasd</li>
           </ul>
           <button class="btn text-center fw-bolder d-block mx-auto w-25" id="select-difficulty-btn" style="box-shadow: none; background-color: #FFDAB9;">Start Game</button>
+        </div>
+        <div class="p-4 d-block" id="game-over-lose">
+          <h4 class="text-center mb-5 mt-5">Game Over</h4>
+          <button class="btn text-center fw-bolder d-block mx-auto w-50 mb-4" id="try-again-btn" style="box-shadow: none; background-color: #FFDAB9;">Try Again</button>
+          <button class="btn text-center fw-bolder d-block mx-auto w-50 mb-4" id="back-to-menu-btn" style="box-shadow: none; background-color: #FFDAB9;">Back To Menu</button>
         </div>
         <div class="p-4 d-none" id="difficulty-setting">
           <h4 class="text-center mb-5">Select Difficulty</h4>
@@ -39,21 +46,25 @@
             <h4>Very Hard</h4>
             <p class="mb-0">starts with: 3 star difficulty</p>
           </button>
-          <button class="btn btn-primary w-25 mx-auto d-block" id="start-game-btn" disabled>Start Game</button>
+          <button class="btn start-btn btn-primary w-25 mx-auto d-block" disabled>Start Game</button>
         </div>
-        <div id="game-pause"></div> 
+        <div class="p-4 d-none" id="game-pause">
+          <h4 class="text-center mb-5 mt-5">Paused</h4>
+          <button class="btn continue-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Continue</button>
+          <button class="btn restart-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Restart</button>
+          <button class="btn quit-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Quit Game</button>
+        </div> 
       </div>
 
     </div>
-    <div class="gameplay-status">
+    <div class="gameplay-status ms-5 mt-4">
       <h2 id="title">Thrity Game App</h2>
       <h4>Score:</h4>
-      <div id="score-tile"></div>
+      <div class="mb-3" id="score-tile"></div>
       <h4>Difficulty</h4>
-      <div id="star-diffuculty-img"></div>
+      <div id="display-star-difficulty"></div>
     </div>
   </main>
-  <div id="cursor-info"></div> 
   <footer class="mt-5">
     <p>Created By Rifky Marcelio</p>
     <a id="source-code" href="#"><i class="fab fa-github"></i> Source Code</a>
@@ -63,6 +74,6 @@
   <script src="../src/generateRandomColor.js"></script>
   <script src="../src/gameConfig.js"></script>
   <script src="../src/Tile.js"></script>
-  <script src="../src/gameArea.js"></script>
+  <script src="../src/gameArea.js"></script> 
 </body>
 </html>

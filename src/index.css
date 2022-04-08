@@ -1,3 +1,7 @@
+.btn:focus {
+  box-shadow: none;
+}
+
 #root {
   margin: 0;
   padding: 0;
@@ -62,4 +66,37 @@ footer {
 
 .difficulty-options.selected {
   box-shadow: 0 0 0 0.25rem rgba(0, 60, 151, 0.5);
+}
+
+#score-tile {
+  height: 80px;
+  width: 70px;
+  background-color: bisque;
+  background-size: contain;
+}
+
+#game-over-lose {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.btn-controller {
+  height: 2.5rem;
+  width: 2.5rem;
+  border-radius: 50%;
+  color: white;
+  background: antiquewhite url("../icons/pause-solid.svg") no-repeat center center;
+  background-size: 50%;
+}
+
+#game-pause {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
 }

@@ -639,7 +639,6 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
     });
     return isAlreadyIncluded;
   };
-
   this.getAllTilesStackedAbove = function () {
     let allStackedTile = [];
     let tileQueue = [this];
@@ -663,21 +662,18 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
 
     return allStackedTile;
   };
-
   this.markAsVisited = function () {
     let tiles = this.getAllGroupMembers();
     tiles.forEach((tile) => {
       tile.isVisited = true;
     });
   };
-
   this.propagateStopFalling = function () {
     let stackedTiles = this.getAllTilesStackedAbove();
     stackedTiles.forEach((groupTile) => {
       groupTile[0].stopFalling();
     });
   };
-
   this.propageteFall = function () {
     let tileQueue = [this];
     while (tileQueue.length > 0) {
@@ -838,6 +834,7 @@ const initializeSampleTile = () => {
     );
     i++;
   }
+  gameArea.detectFallingTiles();
 };
 
 const initializeSampleTies = () => {
