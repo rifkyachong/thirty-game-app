@@ -40,20 +40,13 @@ footer {
   border-radius: 8px;
 }
 
-#game-intro {
+#game-intro, #difficulty-setting, #game-over, #you-win, #game-pause {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-}
-
-#difficulty-setting {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  z-index: 1;
 }
 
 .difficulty-options {
@@ -75,14 +68,6 @@ footer {
   background-size: contain;
 }
 
-#game-over-lose {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-}
-
 .btn-controller {
   height: 2.5rem;
   width: 2.5rem;
@@ -90,13 +75,4 @@ footer {
   color: white;
   background: antiquewhite url("../icons/pause-solid.svg") no-repeat center center;
   background-size: 50%;
-}
-
-#game-pause {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1;
 }

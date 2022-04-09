@@ -142,3 +142,6 @@ if row position changed
 
 
 do we really need of activeTile checking in checkTileMoveability methods?
+
+
+we need to check for falling tile after the combine tile (combined while falling) touch ground

@@ -27,11 +27,7 @@
           </ul>
           <button class="btn text-center fw-bolder d-block mx-auto w-25" id="select-difficulty-btn" style="box-shadow: none; background-color: #FFDAB9;">Start Game</button>
         </div>
-        <div class="p-4 d-block" id="game-over-lose">
-          <h4 class="text-center mb-5 mt-5">Game Over</h4>
-          <button class="btn text-center fw-bolder d-block mx-auto w-50 mb-4" id="try-again-btn" style="box-shadow: none; background-color: #FFDAB9;">Try Again</button>
-          <button class="btn text-center fw-bolder d-block mx-auto w-50 mb-4" id="back-to-menu-btn" style="box-shadow: none; background-color: #FFDAB9;">Back To Menu</button>
-        </div>
+        
         <div class="p-4 d-none" id="difficulty-setting">
           <h4 class="text-center mb-5">Select Difficulty</h4>
           <button class="difficulty-options btn btn-sm w-50 mx-auto d-block mb-4" id="normal-difficulty" style="background-color: #FFFF80;">
@@ -54,6 +50,16 @@
           <button class="btn restart-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Restart</button>
           <button class="btn quit-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Quit Game</button>
         </div> 
+        <div class="p-4 d-none" id="game-over">
+          <h4 class="text-center mb-5 mt-5">Game Over</h4>
+          <button class="btn restart-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Try Again</button>
+          <button class="btn quit-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Quit Game</button>
+        </div>
+        <div class="p-4 d-none" id="you-win">
+          <h4 class="text-center mb-5 mt-5">You Win!!!</h4>
+          <button class="btn restart-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Play Again</button>
+          <button class="btn quit-btn text-center fw-bolder d-block mx-auto w-50 mb-4" style="box-shadow: none; background-color: #FFDAB9;">Quit Game</button>
+        </div>
       </div>
 
     </div>
@@ -63,6 +69,7 @@
       <div class="mb-3" id="score-tile"></div>
       <h4>Difficulty</h4>
       <div id="display-star-difficulty"></div>
+      <p id="display-info"></p>
     </div>
   </main>
   <footer class="mt-5">

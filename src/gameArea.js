@@ -4,13 +4,12 @@ const gameArea = {
     intro: document.getElementById("game-intro"),
     setDifficulty: document.getElementById("difficulty-setting"),
     pause: document.getElementById("game-pause"),
-    gameOver: document.getElementById("game-over-lose"),
-    // youWin: null,
+    gameOver: document.getElementById("game-over"),
+    youWin: document.getElementById("game-over"),
   },
   gameButtons: {
     toSetDifficulty: document.getElementById("select-difficulty-btn"),
     toChooseDifficulty: document.querySelectorAll(".difficulty-options"),
-    // toPlayAgain: null,
     toStart: document.querySelectorAll(".start-btn"),
     toPause: document.querySelectorAll(".pause-btn"),
     toContinue: document.querySelectorAll(".continue-btn"),
@@ -21,6 +20,7 @@ const gameArea = {
     timerBar: document.getElementById("time-bar"),
     scoreTile: document.getElementById("score-tile"),
     starDifficulty: document.getElementById("display-star-difficulty"),
+    textDisplay: document.getElementById("display-info"),
   },
   canvas: document.createElement("canvas"),
   context: null,
@@ -108,25 +108,40 @@ const gameArea = {
   restart: function () {
     gameArea.canvas.style.filter = "";
     gameArea.isPaused = false;
+    gameArea.isStarted = true;
     gameArea.start();
   },
   quit: function () {
     gameArea.clear();
+
+    const { timerBar, scoreTile, starDifficulty } = gameArea.gameDisplays;
+    timerBar.style.backgroundImage = "none";
+    scoreTile.style.backgroundImage = "";
+    starDifficulty.innerHTML = "";
+    gameArea.starDifficulty = null;
+
     gameArea.canvas.style.filter = "";
     gameArea.isPaused = false;
     gameArea.isStarted = false;
     gameArea.openPage("intro");
   },
   terminateGame: function () {
-    gameArea.isTerminated = true;
+    const { toPause } = gameArea.gameButtons;
+    toPause.forEach((button) => {
+      button.disabled = true;
+    });
+
+    gameArea.canvas.style.filter = "blur(5px)";
+
+    gameArea.isStarted = false;
     clearTimeout(gameArea.newRowTimeoutId);
 
-    if (gameArea.score < 30) {
+    if (gameArea.score < 15) {
       gameArea.openPage("gameOver");
     } else {
+      gameArea.openPage("youWin");
     }
   },
-  isTerminated: false,
   intervalId: null,
   clear: function () {
     const [canvasWidth, canvasHeight] = [this.canvas.width, this.canvas.height];
@@ -205,6 +220,8 @@ const gameArea = {
   },
   detectFallingTiles: function () {
     gameArea.tileGrid
+      .slice()
+      .reverse()
       .flat()
       .filter((tile) => tile instanceof Tile)
       .forEach((checkedTile) => {
@@ -216,7 +233,7 @@ const gameArea = {
             return;
           }
           let { bottomFree } = checkedTile.checkGroupMoveability();
-          if (bottomFree) {
+          if (bottomFree && !checkedTile.onDelayedCombine) {
             let tiles = checkedTile.getAllGroupMembers();
             let stackedTiles = checkedTile.getAllTilesStackedAbove();
             stackedTiles = stackedTiles.filter(
@@ -247,6 +264,9 @@ const gameArea = {
     if (prevScore !== this.score) {
       this.gameDisplays.scoreTile.style.backgroundImage = `url(../tiles/tile${this.score}.png)`;
     }
+    if (gameArea.score === 15) {
+      gameArea.terminateGame();
+    }
   },
   onNewRowTransition: false,
   gridOffsetY: 0,
@@ -266,11 +286,17 @@ const gameArea = {
     gameArea.gameDisplays.timerBar.style.backgroundImage = `linear-gradient(to right, ${color1} ${color1WidthSection}%, ${color2} ${color1WidthSection}%, ${color2} ${color2WidthSection}%, ${color3} ${color2WidthSection}%)`;
   },
   updateDifficulty: function () {
-    let prevDifficulty = this.starDifficulty;
-    let newDifficulty = this.determineDifficulty();
+    let prevDifficulty = gameArea.starDifficulty;
+    let newDifficulty = gameArea.determineDifficulty();
     if (newDifficulty !== prevDifficulty) {
-      this.starDifficulty = newDifficulty;
-      this.gameDisplays.starDifficulty.innerHTML = displayStar(newDifficulty);
+      gameArea.starDifficulty = newDifficulty;
+      gameArea.gameDisplays.starDifficulty.innerHTML =
+        displayStar(newDifficulty);
+      if (prevDifficulty) {
+        newDifficulty > prevDifficulty
+          ? gameArea.logTextDisplay("Difficulty Increased!!")
+          : gameArea.logTextDisplay("Difficulty Decreased!!");
+      }
     }
   },
   determineDifficulty: function () {
@@ -310,6 +336,11 @@ const gameArea = {
     for (let page of pagesArray) {
       page.classList.add("d-none");
     }
+  },
+  logTextDisplay: function (text) {
+    const { textDisplay } = gameArea.gameDisplays;
+    textDisplay.innerText = text;
+    setTimeout(() => (textDisplay.innerText = ""), 3000);
   },
 };
 
@@ -439,7 +470,7 @@ function reRenderGameArea() {
   checkForNoMatchAvailable();
 
   if (gameArea.onNewRowTransition) {
-    newRowTransition();
+    renderNewRowTransition();
   }
 
   if (gameArea.activeTile) {
@@ -449,6 +480,8 @@ function reRenderGameArea() {
   if (gameArea.fallingTiles.length > 0) {
     handleFallingTiles(gameArea.fallingTiles);
   }
+
+  addLastRowWarning();
 
   gameArea.tileGrid
     .flat()
@@ -465,7 +498,7 @@ function reRenderGameArea() {
     .filter((item) => item instanceof Tile)
     .forEach((tile) => tile.render());
 
-  if (!gameArea.isPaused && !gameArea.isTerminated) {
+  if (!gameArea.isPaused && gameArea.isStarted) {
     gameArea.intervalId = window.requestAnimationFrame(reRenderGameArea);
   }
 }
@@ -527,7 +560,12 @@ function insertNewTies() {
           //vertical ties
           let { topTile } = selectedTile.getAdjacentTile();
           if (topTile && topTile.getAllGroupMembers().length === 1) {
-            selectedTile.tieWithTopTile();
+            if (
+              topTile.isFalling ||
+              (gameArea.activeTile &&
+                topTile.getAllGroupMembers().includes(gameArea.activeTile))
+            )
+              selectedTile.tieWithTopTile();
             numOfTies -= 1;
             singleTiles = gameArea.tileGrid[
               gameArea.tileGrid.length - 1
@@ -563,7 +601,12 @@ function insertNewTies() {
         } else {
           let { topTile } = selectedTile.getAdjacentTile();
           if (topTile && topTile.getAllGroupMembers().length < 3) {
-            if (topTile.isSameGroupWith(selectedTile)) {
+            if (
+              topTile.isSameGroupWith(selectedTile) ||
+              topTile.isFalling ||
+              (gameArea.activeTile &&
+                topTile.getAllGroupMembers().includes(gameArea.activeTile))
+            ) {
               continue;
             }
             selectedTile.tieWithTopTile();
@@ -595,7 +638,7 @@ function forceInsertNewTileRow() {
   insertNewTileRow();
 }
 
-function newRowTransition() {
+function renderNewRowTransition() {
   let elapsed =
     performance.now() - (gameArea.nextNewRowTime - gameArea.newRowInterval);
   if (elapsed > gameArea.newRowAnimationDuration) {
@@ -659,6 +702,30 @@ function getRandomTileNumber(currentScore) {
   let leastNumberInGameArea = Math.min(...arrayOfNumber);
   min = Math.min(min, leastNumberInGameArea);
   return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function addLastRowWarning() {
+  const warningColor = "#ad0000";
+  const warningTime = 4000;
+  const warnedTiles = gameArea.tileGrid
+    .flat()
+    .filter((tile) => tile instanceof Tile)
+    .filter((tile) => tile.row === 0);
+  const timeRemaining = gameArea.nextNewRowTime - performance.now();
+  gameArea.context.globalAlpha =
+    1 - 0.5 * (Math.cos((timeRemaining / 1000) * 2 * Math.PI) + 1);
+  gameArea.context.fillStyle = warningColor;
+  warnedTiles.forEach((tile) => {
+    if (timeRemaining < warningTime || gameArea.onNewRowTransition) {
+      gameArea.context.fillRect(
+        tile.x,
+        tile.y,
+        tileGridOptions.columnWidth,
+        tileGridOptions.rowHeight
+      );
+    }
+  });
+  gameArea.context.globalAlpha = 1;
 }
 
 initializeGame();

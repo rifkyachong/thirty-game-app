@@ -7,6 +7,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
   this.height = tileGridOptions.rowHeight;
   this.speedY = null;
   this.isFalling = null;
+  this.onDelayedCombine = false;
   this.number = initialNumber;
   this.numberIsChanged = false;
   this.tileImg = new Image();
@@ -74,16 +75,6 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
       this.width,
       this.height
     );
-
-    // gameArea.context.fillStyle = this.color;
-    // gameArea.context.fillRect(this.x, this.y, this.width, this.height);
-    // gameArea.context.font = "40px Georgia";
-    // gameArea.context.fillStyle = "black";
-    // if (this.number > 9) {
-    //   gameArea.context.fillText(this.number, this.x + 15, this.y + 45);
-    // } else {
-    //   gameArea.context.fillText(this.number, this.x + 25, this.y + 45);
-    // }
   };
 
   this.renderTies = function () {
@@ -377,6 +368,9 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
         return false;
       }
     }
+    if (this.onDelayedCombine) {
+      return false;
+    }
     return true;
   };
   this.attachToGrid = function (newRow, newColumn) {
@@ -397,6 +391,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
         if (!tile.isFalling) {
           replacedTile.incrementTileNumberFrom(tile);
         } else {
+          replacedTile.onDelayedCombine = true;
           tile.row = tile.row + rowChange;
           tile.column = tile.column + columnChange;
         }
@@ -409,21 +404,6 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
       // if there is a same tile, perform tile increment
     });
   };
-  // this.moveToGrid = function (newRow, newColumn) {
-  //   if (
-  //     gameArea.tileGrid[newRow] &&
-  //     newCol < tileGridOptions.nCol &&
-  //     newCol >= 0
-  //   ) {
-  //     const replacedTile = gameArea.tileGrid[newRow][newColumn];
-  //     gameArea.tileGrid[(this.row, this.column)] = null;
-  //     if (replacedTile && replacedTile.isSameNumberWith(this)) {
-  //       // combine tile
-  //       return;
-  //     }
-  //     gameArea.tileGrid[newRow][newCol] = this;
-  //   }
-  // };
 
   this.determineNewPosition = function () {
     const [hoveredRow, hoveredColumn] = gameArea.getRowColumnPosition();
@@ -533,12 +513,8 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
   this.incrementTileNumberFrom = function (sacrificedTile) {
     this.number += 1;
     this.numberIsChanged = true;
+    this.onDelayedCombine = false;
 
-    gameArea.removeFallingTiles(
-      [this],
-      this.getAllGroupMembers(),
-      ...this.getAllTilesStackedAbove()
-    );
     gameArea.removeFallingTiles(
       sacrificedTile.getAllGroupMembers(),
       ...sacrificedTile.getAllTilesStackedAbove()
@@ -554,8 +530,8 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
 
   /////////////////////////////////////////////////////////////
   this.setNewYPosition = function () {
-    let acceleration = 0.5;
-    let terminalVelocity = 5;
+    let acceleration = 0.1;
+    let terminalVelocity = 0.5;
     let tiles = this.getAllGroupMembers();
     tiles.forEach((tile) => {
       tile.speedY = Math.min(tile.speedY + acceleration, terminalVelocity);
@@ -649,7 +625,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
         if (!groupTile[0].isVisited) {
           allStackedTile.push(groupTile);
           tileQueue.push(groupTile[0]);
-          groupTile.markAsVisited;
+          groupTile[0].markAsVisited();
         }
       });
     }
@@ -752,18 +728,25 @@ const handleFallingTiles = ([...fallingTiles]) => {
         let tilesBelow = representativeTile.getTilesStackedBelow();
         if (tilesBelow.flat().includes(gameArea.activeTile)) {
           let activeTileGroup = gameArea.activeTile.getAllGroupMembers();
-          gameArea.fallingTiles.unshift(activeTileGroup);
-          activeTileGroup.forEach((tile) => {
-            tile.speedY = representativeTile.speedY;
-            tile.isFalling = true;
-          });
-          gameArea.activeTile.moveToCoordinate(
-            gameArea.activeTile.column * tileGridOptions.columnWidth,
-            representativeTile.y -
-              representativeTile.row * tileGridOptions.rowHeight +
-              gameArea.activeTile.row * tileGridOptions.rowHeight
-          );
-          gameArea.activeTile = null;
+          let { bottomFree } = activeTileGroup[0].checkGroupMoveability();
+          if (bottomFree) {
+            gameArea.fallingTiles.unshift(activeTileGroup);
+            activeTileGroup.forEach((tile) => {
+              tile.speedY = representativeTile.speedY;
+              tile.isFalling = true;
+            });
+            gameArea.activeTile.moveToCoordinate(
+              gameArea.activeTile.column * tileGridOptions.columnWidth,
+              representativeTile.y -
+                representativeTile.row * tileGridOptions.rowHeight +
+                gameArea.activeTile.row * tileGridOptions.rowHeight
+            );
+            gameArea.activeTile = null;
+          } else {
+            let stackedTiles = representativeTile.getAllTilesStackedAbove();
+            gameArea.removeFallingTiles(groupTile, ...stackedTiles);
+            gameArea.detectFallingTiles();
+          }
         }
       }
 
@@ -775,6 +758,7 @@ const handleFallingTiles = ([...fallingTiles]) => {
       } else {
         let stackedTiles = representativeTile.getAllTilesStackedAbove();
         gameArea.removeFallingTiles(groupTile, ...stackedTiles);
+        gameArea.detectFallingTiles();
       }
     }
   });
@@ -834,6 +818,7 @@ const initializeSampleTile = () => {
     );
     i++;
   }
+  gameArea.fallingTiles = [];
   gameArea.detectFallingTiles();
 };
 
