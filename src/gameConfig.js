@@ -44,3 +44,13 @@ tileNumberDistributionOptions = [
   { min: 9, max: 28 },
   { min: 10, max: 29 },
 ];
+
+timePerNewRowPerDifficulty = {
+  1: 12000,
+  2: 12000,
+  3: 11000,
+  4: 10000,
+  5: 10000,
+  6: 10000,
+  7: 10000
+}

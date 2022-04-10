@@ -160,7 +160,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
       this.column
     );
 
-    let [cursorX, cursorY] = gameArea.getXYPosition();
+    let [cursorX, cursorY] = gameArea.getCursorXYPosition();
     let [tileCenterX, tileCenterY] = [cursorX, cursorY];
 
     if (!rightFree && cursorX > gridCenterX) {
@@ -240,7 +240,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
   };
 
   this.hasCursorInside = function () {
-    let [cursorX, cursorY] = gameArea.getXYPosition();
+    let [cursorX, cursorY] = gameArea.getCursorXYPosition();
     let hasCursorInside = false;
     if (
       cursorX >= this.x &&
@@ -298,7 +298,6 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
       }
     });
   };
-
   /////////////////////////////////////////////////////////////
   this.checkTileMoveability = function () {
     const { topTile, bottomTile, leftTile, rightTile } = this.getAdjacentTile();
@@ -363,7 +362,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
   };
   this.isGrabable = function () {
     if (this.isFalling) {
-      let stackedTile = this.getAllTilesStackedAbove();
+      const stackedTile = this.getAllTilesStackedAbove();
       if (stackedTile.length > 0) {
         return false;
       }
@@ -406,7 +405,7 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
   };
 
   this.determineNewPosition = function () {
-    const [hoveredRow, hoveredColumn] = gameArea.getRowColumnPosition();
+    const [hoveredRow, hoveredColumn] = gameArea.getCursorRowColumnPosition();
     const [prevRow, prevColumn] = [this.row, this.column];
 
     let pathGrid = Array(Math.abs(hoveredRow - prevRow) + 1)
@@ -530,8 +529,8 @@ function Tile(initialRow, initialColumn, initialNumber, color) {
 
   /////////////////////////////////////////////////////////////
   this.setNewYPosition = function () {
-    let acceleration = 0.1;
-    let terminalVelocity = 0.5;
+    let acceleration = 2;
+    let terminalVelocity = 25;
     let tiles = this.getAllGroupMembers();
     tiles.forEach((tile) => {
       tile.speedY = Math.min(tile.speedY + acceleration, terminalVelocity);
@@ -673,11 +672,12 @@ const handleActiveTile = (activeTile) => {
   const activeTileGroup = activeTile.getAllGroupMembers();
   let activeTileGroupIsModified = false;
   const [prevRow, prevColumn] = activeTile.getRowColumnPosition();
-  let [newRow, newColumn] = gameArea.getRowColumnPosition();
+  const [newRow, newColumn] = gameArea.getCursorRowColumnPosition();
   const numberOfGridStep =
     Math.abs(newRow - prevRow) + Math.abs(newColumn - prevColumn);
   if (numberOfGridStep > 0) {
-    let [newRow, newColumn] = activeTile.determineNewPosition();
+    console.log("move");
+    const [newRow, newColumn] = activeTile.determineNewPosition();
 
     activeTile.detachFromGrid();
 
@@ -765,20 +765,19 @@ const handleFallingTiles = ([...fallingTiles]) => {
 };
 
 const grabTile = () => {
-  let [clickedRow, clickedColumn] = gameArea.getRowColumnPosition();
+  const [clickedRow, clickedColumn] = gameArea.getCursorRowColumnPosition();
 
-  let tile = gameArea.getTileInGrid(clickedRow, clickedColumn);
-  let tileAbove = gameArea.getTileInGrid(clickedRow - 1, clickedColumn);
-  let tileBelow = gameArea.getTileInGrid(clickedRow + 1, clickedColumn);
+  const tile = gameArea.getTileInGrid(clickedRow, clickedColumn);
+  const tileAbove = gameArea.getTileInGrid(clickedRow - 1, clickedColumn);
+  const tileBelow = gameArea.getTileInGrid(clickedRow + 1, clickedColumn);
 
-  let grabbedTile = [tile, tileAbove, tileBelow]
+  const grabbedTile = [tile, tileAbove, tileBelow]
     .filter((item) => item instanceof Tile)
     .filter((tile) => tile.hasCursorInside());
 
   if (grabbedTile.length > 0 && grabbedTile[0].isGrabable()) {
     gameArea.activeTile = grabbedTile[0];
   }
-  //check for grabability!!!
 };
 
 const releaseTile = (activeTile) => {

@@ -150,21 +150,21 @@ const gameArea = {
   tileGrid: [[]],
   fallingTiles: [],
   activeTile: null,
-  getXYPosition: function () {
+  getCursorXYPosition: function () {
     return [gameArea.x, gameArea.y];
   },
   getCenterPointOfGrid: function (row, column) {
     return [
       (column + 0.5) * tileGridOptions.columnWidth,
-      (row + 0.5) * tileGridOptions.rowHeight - this.gridOffsetY,
+      (row + 0.5) * tileGridOptions.rowHeight - gameArea.gridOffsetY,
     ];
   },
-  getRowColumnPosition: function () {
-    let column = Math.min(
+  getCursorRowColumnPosition: function () {
+    const column = Math.min(
       Math.floor(gameArea.x / tileGridOptions.columnWidth),
       tileGridOptions.nCol - 1
     );
-    let row = Math.min(
+    const row = Math.min(
       Math.floor((gameArea.y + this.gridOffsetY) / tileGridOptions.rowHeight),
       tileGridOptions.nRow - 1
     );
@@ -189,11 +189,6 @@ const gameArea = {
         tile.speedY = 0;
       });
     });
-    // addedGroupTiles.forEach((groupTile) => {
-    //   if (!this.fallingTilesContains(groupTile)) {
-    //     this.fallingTiles.push(groupTile);
-    //   }
-    // });
   },
   fallingTilesContains: function (testedGroupTile) {
     let isContains = this.fallingTiles.some((groupTile) => {
@@ -223,31 +218,28 @@ const gameArea = {
       .slice()
       .reverse()
       .flat()
-      .filter((tile) => tile instanceof Tile)
+      .filter((item) => item instanceof Tile)
       .forEach((checkedTile) => {
         if (!checkedTile.isFalling) {
           if (
-            this.activeTile &&
-            this.activeTile.getAllGroupMembers().includes(checkedTile)
+            gameArea.activeTile &&
+            gameArea.activeTile.getAllGroupMembers().includes(checkedTile)
           ) {
             return;
           }
-          let { bottomFree } = checkedTile.checkGroupMoveability();
+          const { bottomFree } = checkedTile.checkGroupMoveability();
           if (bottomFree && !checkedTile.onDelayedCombine) {
-            let tiles = checkedTile.getAllGroupMembers();
+            const tiles = checkedTile.getAllGroupMembers();
             let stackedTiles = checkedTile.getAllTilesStackedAbove();
             stackedTiles = stackedTiles.filter(
               (groupTile) => !groupTile[0].isFalling
             );
-            this.addFallingTiles(tiles, ...stackedTiles);
+            gameArea.addFallingTiles(tiles, ...stackedTiles);
           }
         }
       });
   },
   score: null,
-  // gameTimeOrigin: null,
-  // gameTimeElapsed: null,
-  // lastTileInsertionTime: null,
   newRowTimeoutId: null,
   newRowBaseInterval: 12000,
   newRowInterval: 12000,
@@ -264,7 +256,7 @@ const gameArea = {
     if (prevScore !== this.score) {
       this.gameDisplays.scoreTile.style.backgroundImage = `url(../tiles/tile${this.score}.png)`;
     }
-    if (gameArea.score === 15) {
+    if (gameArea.score === 30) {
       gameArea.terminateGame();
     }
   },
@@ -272,18 +264,23 @@ const gameArea = {
   gridOffsetY: 0,
   mode: null,
   starDifficulty: null,
-
   renderTimer: function () {
     const { nextNewRowTime, newRowInterval, newRowBaseInterval } = gameArea;
+    const { timerBar } = gameArea.gameDisplays;
     const timeLeft = nextNewRowTime - performance.now();
 
     const color1 = "#C0C0C0";
     const color2 = "#989898";
     const color3 = "#484848";
 
-    const color1WidthSection = (timeLeft / newRowBaseInterval) * 100;
-    const color2WidthSection = (newRowBaseInterval / newRowBaseInterval) * 100;
-    gameArea.gameDisplays.timerBar.style.backgroundImage = `linear-gradient(to right, ${color1} ${color1WidthSection}%, ${color2} ${color1WidthSection}%, ${color2} ${color2WidthSection}%, ${color3} ${color2WidthSection}%)`;
+    const color1Stop = (timeLeft / newRowBaseInterval) * 100;
+    const color2Stop = (newRowInterval / newRowBaseInterval) * 100;
+
+    if (color1Stop < color2Stop) {
+      timerBar.style.backgroundImage = `linear-gradient(to right, ${color1} ${color1Stop}%, ${color2} ${color1Stop}%, ${color2} ${color2Stop}%, ${color3} ${color2Stop}%)`;
+    } else {
+      timerBar.style.backgroundImage = `linear-gradient(to right, ${color1} ${color2Stop}%, ${color3} ${color2Stop}%)`;
+    }
   },
   updateDifficulty: function () {
     let prevDifficulty = gameArea.starDifficulty;
@@ -292,6 +289,7 @@ const gameArea = {
       gameArea.starDifficulty = newDifficulty;
       gameArea.gameDisplays.starDifficulty.innerHTML =
         displayStar(newDifficulty);
+      gameArea.newRowInterval = timePerNewRowPerDifficulty[newDifficulty];
       if (prevDifficulty) {
         newDifficulty > prevDifficulty
           ? gameArea.logTextDisplay("Difficulty Increased!!")
@@ -539,83 +537,84 @@ function insertNewTies() {
       // no ties
       break;
     case 2: {
-      numOfTies = 2;
-      let singleTiles = gameArea.tileGrid[gameArea.tileGrid.length - 1].filter(
-        (tile) => tile.getAllGroupMembers().length === 1
-      );
-      while (numOfTies > 0 && singleTiles.length > 0) {
-        let selectedTile =
-          singleTiles[Math.floor(Math.random() * singleTiles.length)];
-        if (Math.random() < 0.5) {
-          //horizontal ties
-          let { rightTile } = selectedTile.getAdjacentTile();
-          if (rightTile && rightTile.getAllGroupMembers().length === 1) {
-            selectedTile.tieWithRightTile();
-            numOfTies -= 1;
-            singleTiles = gameArea.tileGrid[
-              gameArea.tileGrid.length - 1
-            ].filter((tile) => tile.getAllGroupMembers().length === 1);
-          }
-        } else {
-          //vertical ties
-          let { topTile } = selectedTile.getAdjacentTile();
-          if (topTile && topTile.getAllGroupMembers().length === 1) {
-            if (
-              topTile.isFalling ||
-              (gameArea.activeTile &&
-                topTile.getAllGroupMembers().includes(gameArea.activeTile))
-            )
-              selectedTile.tieWithTopTile();
-            numOfTies -= 1;
-            singleTiles = gameArea.tileGrid[
-              gameArea.tileGrid.length - 1
-            ].filter((tile) => tile.getAllGroupMembers().length === 1);
-          }
-        }
-      }
+      insertTies(2, 2, 2);
       break;
     }
     case 3: {
-      numOfTies = 4;
-      let singleOrDoubleTiles = gameArea.tileGrid[
-        gameArea.tileGrid.length - 1
-      ].filter((tile) => tile.getAllGroupMembers().length < 3);
-      while (numOfTies > 0 && singleOrDoubleTiles.length > 0) {
-        let selectedTile =
-          singleOrDoubleTiles[
-            Math.floor(Math.random() * singleOrDoubleTiles.length)
-          ];
-        if (Math.random() < 0.5) {
-          //horizontal ties
-          let { rightTile } = selectedTile.getAdjacentTile();
-          if (rightTile && rightTile.getAllGroupMembers().length < 3) {
-            if (rightTile.isSameGroupWith(selectedTile)) {
-              continue;
-            }
-            selectedTile.tieWithRightTile();
-            numOfTies -= 1;
-            singleOrDoubleTiles = gameArea.tileGrid[
-              gameArea.tileGrid.length - 1
-            ].filter((tile) => tile.getAllGroupMembers().length < 3);
-          }
-        } else {
-          let { topTile } = selectedTile.getAdjacentTile();
-          if (topTile && topTile.getAllGroupMembers().length < 3) {
-            if (
-              topTile.isSameGroupWith(selectedTile) ||
-              topTile.isFalling ||
-              (gameArea.activeTile &&
-                topTile.getAllGroupMembers().includes(gameArea.activeTile))
-            ) {
-              continue;
-            }
-            selectedTile.tieWithTopTile();
-            numOfTies -= 1;
-            singleOrDoubleTiles = gameArea.tileGrid[
-              gameArea.tileGrid.length - 1
-            ].filter((tile) => tile.getAllGroupMembers().length < 3);
-          }
+      insertTies(3, 3, 2);
+      break;
+    }
+    case 4: {
+      insertTies(4, 4, 2);
+      break;
+    }
+    case 5: {
+      insertTies(6, 4, 3);
+      break;
+    }
+    case 6: {
+      insertTies(6, 4, 3);
+      break;
+    }
+    case 7: {
+      insertTies(6, 4, 3);
+      break;
+    }
+    default: {
+    }
+  }
+}
+
+function insertTies(maxNumOfTies, maxNumOfMemberGroup, numOfRowAffected = 2) {
+  function getAllowedTiles() {
+    return gameArea.tileGrid
+      .slice(-numOfRowAffected + 1)
+      .flat()
+      .filter((item) => item instanceof Tile)
+      .filter((tile) => tile.getAllGroupMembers().length < maxNumOfMemberGroup);
+  }
+
+  let numOfTiesLeft = maxNumOfTies;
+  let allowedTiles = getAllowedTiles();
+  while (numOfTiesLeft > 0 && allowedTiles.length > 0) {
+    let selectedTile =
+      allowedTiles[Math.floor(Math.random() * allowedTiles.length)];
+    if (Math.random() < 0.5) {
+      let { rightTile } = selectedTile.getAdjacentTile();
+      if (rightTile && rightTile.isSameGroupWith(selectedTile)) {
+        continue;
+      }
+      if (
+        rightTile &&
+        rightTile.getAllGroupMembers().length +
+          selectedTile.getAllGroupMembers().length <=
+          maxNumOfMemberGroup
+      ) {
+        selectedTile.tieWithRightTile();
+        numOfTiesLeft -= 1;
+        allowedTiles = getAllowedTiles();
+      }
+    } else {
+      let { topTile } = selectedTile.getAdjacentTile();
+      if (topTile && topTile.isSameGroupWith(selectedTile)) {
+        continue;
+      }
+      if (
+        topTile &&
+        topTile.getAllGroupMembers().length +
+          selectedTile.getAllGroupMembers().length <=
+          maxNumOfMemberGroup
+      ) {
+        if (
+          topTile.isFalling ||
+          (gameArea.activeTile &&
+            topTile.getAllGroupMembers().includes(gameArea.activeTile))
+        ) {
+          continue;
         }
+        selectedTile.tieWithTopTile();
+        numOfTiesLeft -= 1;
+        allowedTiles = getAllowedTiles();
       }
     }
   }
@@ -649,8 +648,8 @@ function renderNewRowTransition() {
       .flat()
       .filter((tile) => tile instanceof Tile)
       .forEach((tile) => {
-        tile.row -= 1;
         if (!tile.isFalling) {
+          tile.row -= 1;
           if (
             gameArea.activeTile &&
             gameArea.activeTile.getAllGroupMembers().includes(tile)
@@ -660,9 +659,15 @@ function renderNewRowTransition() {
           tile.snapToGrid();
         }
       });
+    gameArea.fallingTiles.flat().forEach((tile) => {
+      tile.row -= 1;
+    });
     tileGridOptions.nRow -= 1;
     let topRowTiles = gameArea.tileGrid.shift();
     if (topRowTiles.some((tile) => tile instanceof Tile)) {
+      if (gameArea.activeTile.getAllGroupMembers().includes(tile)) {
+        return;
+      }
       gameArea.terminateGame();
     }
     return;
