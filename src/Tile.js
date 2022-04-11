@@ -676,7 +676,6 @@ const handleActiveTile = (activeTile) => {
   const numberOfGridStep =
     Math.abs(newRow - prevRow) + Math.abs(newColumn - prevColumn);
   if (numberOfGridStep > 0) {
-    console.log("move");
     const [newRow, newColumn] = activeTile.determineNewPosition();
 
     activeTile.detachFromGrid();

@@ -5,7 +5,7 @@ const gameArea = {
     setDifficulty: document.getElementById("difficulty-setting"),
     pause: document.getElementById("game-pause"),
     gameOver: document.getElementById("game-over"),
-    youWin: document.getElementById("game-over"),
+    youWin: document.getElementById("you-win"),
   },
   gameButtons: {
     toSetDifficulty: document.getElementById("select-difficulty-btn"),
@@ -136,7 +136,7 @@ const gameArea = {
     gameArea.isStarted = false;
     clearTimeout(gameArea.newRowTimeoutId);
 
-    if (gameArea.score < 15) {
+    if (gameArea.score < 19) {
       gameArea.openPage("gameOver");
     } else {
       gameArea.openPage("youWin");
@@ -541,23 +541,23 @@ function insertNewTies() {
       break;
     }
     case 3: {
-      insertTies(3, 3, 2);
+      insertTies(3, 2, 2);
       break;
     }
     case 4: {
-      insertTies(4, 4, 2);
+      insertTies(3, 3, 2);
       break;
     }
     case 5: {
-      insertTies(6, 4, 3);
+      insertTies(4, 3, 2);
       break;
     }
     case 6: {
-      insertTies(6, 4, 3);
+      insertTies(4, 4, 3);
       break;
     }
     case 7: {
-      insertTies(6, 4, 3);
+      insertTies(4, 4, 3);
       break;
     }
     default: {
@@ -665,7 +665,10 @@ function renderNewRowTransition() {
     tileGridOptions.nRow -= 1;
     let topRowTiles = gameArea.tileGrid.shift();
     if (topRowTiles.some((tile) => tile instanceof Tile)) {
-      if (gameArea.activeTile.getAllGroupMembers().includes(tile)) {
+      if (
+        gameArea.activeTile &&
+        gameArea.activeTile.getAllGroupMembers().includes(tile)
+      ) {
         return;
       }
       gameArea.terminateGame();
