@@ -11,7 +11,7 @@ function Tile(initialRow, initialColumn, initialNumber) {
   this.number = initialNumber;
   this.numberIsChanged = false;
   this.tileImg = new Image();
-  this.tileImg.src = `../tiles/tile${this.number}.png`;
+  this.tileImg.src = `./tiles/tile${this.number}.png`;
   this.ties = {
     top: null,
     bottom: null,
@@ -20,7 +20,7 @@ function Tile(initialRow, initialColumn, initialNumber) {
   };
   this.render = function () {
     if (this.numberIsChanged) {
-      this.tileImg.src = `../tiles/tile${this.number}.png`;
+      this.tileImg.src = `./tiles/tile${this.number}.png`;
       this.numberIsChanged = false;
     }
     gameArea.context.drawImage(
