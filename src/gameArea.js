@@ -736,4 +736,19 @@ function addLastRowWarning() {
   gameArea.context.globalAlpha = 1;
 }
 
+function renderImagesOffScreen() {
+  for (let i = 1; i < 31; i++) {
+    let tmpCanvas = document.createElement("canvas");
+    let tmpCanvasCtx = tmpCanvas.getContext("2d");
+    let img = document.createElement("img");
+
+    img.onload = function () {
+      tmpCanvasCtx.drawImage(img, 0, 0);
+    };
+
+    img.src = `./tiles/tile${i}`;
+  }
+}
+
 initializeGame();
+renderImagesOffScreen();
