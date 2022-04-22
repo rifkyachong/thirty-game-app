@@ -34,14 +34,14 @@ const gameArea = {
   isStarted: false,
   isPaused: false,
   specifyLayoutProperties: function () {
-    this.paddingTop = parseInt(
-      getComputedStyle(this.canvas, null).getPropertyValue("padding-top")
+    gameArea.paddingTop = parseInt(
+      getComputedStyle(gameArea.canvas, null).getPropertyValue("padding-top")
     );
-    this.paddingLeft = parseInt(
-      getComputedStyle(this.canvas, null).getPropertyValue("padding-left")
+    gameArea.paddingLeft = parseInt(
+      getComputedStyle(gameArea.canvas, null).getPropertyValue("padding-left")
     );
-    this.borderTop = this.canvas.clientTop;
-    this.borderLeft = this.canvas.clientLeft;
+    gameArea.borderTop = gameArea.canvas.clientTop;
+    gameArea.borderLeft = gameArea.canvas.clientLeft;
   },
   openGameArea: function () {
     const { nRow, nCol, rowHeight, columnWidth } = tileGridOptions;
@@ -173,6 +173,13 @@ const gameArea = {
   getTileInGrid: function (row, col) {
     return gameArea.tileGrid[row] && gameArea.tileGrid[row][col];
   },
+  getAllTilesInField: function () {
+    return gameArea.tileGrid
+      .slice()
+      .reverse()
+      .flat()
+      .filter((item) => item instanceof Tile);
+  },
   isValidGrid: function (row, col) {
     return (
       0 <= row &&
@@ -189,13 +196,6 @@ const gameArea = {
         tile.speedY = 0;
       });
     });
-  },
-  fallingTilesContains: function (testedGroupTile) {
-    let isContains = this.fallingTiles.some((groupTile) => {
-      return groupTile.every((tile) => testedGroupTile.includes(tile));
-    });
-
-    return isContains;
   },
   removeFallingTiles: function (...removedGroupTile) {
     removedGroupTile.forEach((groupTile) => {
@@ -214,30 +214,25 @@ const gameArea = {
     });
   },
   detectFallingTiles: function () {
-    gameArea.tileGrid
-      .slice()
-      .reverse()
-      .flat()
-      .filter((item) => item instanceof Tile)
-      .forEach((checkedTile) => {
-        if (!checkedTile.isFalling) {
-          if (
-            gameArea.activeTile &&
-            gameArea.activeTile.getAllGroupMembers().includes(checkedTile)
-          ) {
-            return;
-          }
-          const { bottomFree } = checkedTile.checkGroupMoveability();
-          if (bottomFree && !checkedTile.onDelayedCombine) {
-            const tiles = checkedTile.getAllGroupMembers();
-            let stackedTiles = checkedTile.getAllTilesStackedAbove();
-            stackedTiles = stackedTiles.filter(
-              (groupTile) => !groupTile[0].isFalling
-            );
-            gameArea.addFallingTiles(tiles, ...stackedTiles);
-          }
+    gameArea.getAllTilesInField().forEach((checkedTile) => {
+      if (!checkedTile.isFalling) {
+        if (
+          gameArea.activeTile &&
+          gameArea.activeTile.getAllGroupMembers().includes(checkedTile)
+        ) {
+          return;
         }
-      });
+
+        if (checkedTile.isAbleToFall() && !checkedTile.onDelayedCombine) {
+          const tiles = checkedTile.getAllGroupMembers();
+          let stackedTiles = checkedTile.getAllTilesStackedAbove();
+          stackedTiles = stackedTiles.filter(
+            (groupTile) => !groupTile[0].isFalling
+          );
+          gameArea.addFallingTiles(tiles, ...stackedTiles);
+        }
+      }
+    });
   },
   score: null,
   newRowTimeoutId: null,
@@ -248,9 +243,8 @@ const gameArea = {
   timeRemaining: null,
   updateScore: function () {
     let prevScore = this.score;
-    let arrayOfTileNumber = this.tileGrid
-      .flat()
-      .filter((tile) => tile instanceof Tile)
+    let arrayOfTileNumber = gameArea
+      .getAllTilesInField()
       .map((tile) => tile.number);
     this.score = Math.max(...arrayOfTileNumber);
     if (prevScore !== this.score) {
@@ -311,15 +305,10 @@ const gameArea = {
         baseDifficulty = 3;
         break;
       default:
-        new Error("no difficulty available");
+        throw new Error("no difficulty available");
     }
 
     return additionalDifficulty + baseDifficulty;
-  },
-  getRandomTileInNewRow: function () {
-    return gameArea.tileGrid[gameArea.tileGrid.length - 1][
-      Math.floor(Math.random() * tileGridOptions.nCol)
-    ];
   },
   openPage: function (pageName) {
     const targetPage = gameArea.gamePages[pageName];
@@ -465,7 +454,9 @@ function reRenderGameArea() {
   gameArea.updateScore();
   gameArea.updateDifficulty();
   gameArea.renderTimer();
-  checkForNoMatchAvailable();
+  if (checkIfAllNumbersAreUnique()) {
+    forceInsertNewTileRow();
+  }
 
   if (gameArea.onNewRowTransition) {
     renderNewRowTransition();
@@ -481,20 +472,14 @@ function reRenderGameArea() {
 
   addLastRowWarning();
 
-  gameArea.tileGrid
-    .flat()
-    .filter((item) => item instanceof Tile)
-    .forEach((tile) => tile.renderTies());
-
-  gameArea.tileGrid
-    .flat()
-    .filter((item) => item instanceof Tile)
-    .forEach((tile) => tile.render());
+  gameArea.getAllTilesInField().forEach((tile) => tile.renderTies());
 
   gameArea.fallingTiles
     .flat()
     .filter((item) => item instanceof Tile)
     .forEach((tile) => tile.render());
+
+  gameArea.getAllTilesInField().forEach((tile) => tile.render());
 
   if (!gameArea.isPaused && gameArea.isStarted) {
     gameArea.intervalId = window.requestAnimationFrame(reRenderGameArea);
@@ -502,21 +487,11 @@ function reRenderGameArea() {
 }
 
 function insertNewTileRow() {
-  let newTiles = Array(tileGridOptions.nCol)
-    .fill()
-    .map(
-      (el, idx) =>
-        new Tile(
-          tileGridOptions.nRow,
-          idx,
-          getRandomTileNumber(gameArea.score),
-          getRandomLightColor()
-        )
-    );
+  let newTiles = generateNewRandomTileRow();
 
   gameArea.tileGrid.push(newTiles);
 
-  insertNewTies();
+  insertNewTiesBasedOnDifficulty();
 
   tileGridOptions.nRow += 1;
 
@@ -530,7 +505,52 @@ function insertNewTileRow() {
   gameArea.nextNewRowTime = performance.now() + gameArea.newRowInterval;
 }
 
-function insertNewTies() {
+function generateNewRandomTileRow() {
+  const [allowedMin, allowedMax] = determineAllowedRangeOfNumber();
+
+  const lastRowListOfNumber = gameArea.tileGrid[tileGridOptions.nRow - 1].map(
+    (tile) => (tile instanceof Tile ? tile.number : 0)
+  );
+
+  let listOfNumberForNewRow = Array(tileGridOptions.nCol)
+    .fill()
+    .map(() => getRandomNumberWithRange(allowedMin, allowedMax));
+
+  listOfNumberForNewRow.forEach((el, idx) => {
+    while (
+      lastRowListOfNumber[idx] === listOfNumberForNewRow[idx] ||
+      (idx > 0 &&
+        listOfNumberForNewRow[idx - 1] === listOfNumberForNewRow[idx]) ||
+      (idx < tileGridOptions.nCol - 1 &&
+        listOfNumberForNewRow[idx + 1] === listOfNumberForNewRow[idx])
+    ) {
+      listOfNumberForNewRow[idx] = getRandomNumberWithRange(
+        allowedMin,
+        allowedMax
+      );
+    }
+  });
+
+  return listOfNumberForNewRow.map(
+    (number, idx) => new Tile(tileGridOptions.nRow, idx, number)
+  );
+}
+
+function determineAllowedRangeOfNumber() {
+  const currentScore = gameArea.score;
+  const arrayOfNumber = gameArea
+    .getAllTilesInField()
+    .map((tile) => tile.number);
+  const leastNumberInField = Math.min(...arrayOfNumber);
+
+  let { min: allowedMin, max: allowedMax } =
+    tileNumberDistributionOptions[currentScore];
+  allowedMin = Math.min(leastNumberInField, allowedMin);
+
+  return [allowedMin, allowedMax];
+}
+
+function insertNewTiesBasedOnDifficulty() {
   // for difficulty
   switch (gameArea.starDifficulty) {
     case 1:
@@ -620,16 +640,10 @@ function insertTies(maxNumOfTies, maxNumOfMemberGroup, numOfRowAffected = 2) {
   }
 }
 
-function checkForNoMatchAvailable() {
-  let arrayOfNumber = gameArea.tileGrid
-    .flat()
-    .filter((tile) => tile instanceof Tile)
-    .map((tile) => tile.number);
+function checkIfAllNumbersAreUnique() {
+  let arrayOfNumber = gameArea.getAllTilesInField().map((tile) => tile.number);
   let noAvailableMove = new Set(arrayOfNumber).size === arrayOfNumber.length;
-  if (noAvailableMove) {
-    console.log("test");
-    forceInsertNewTileRow();
-  }
+  return noAvailableMove;
 }
 
 function forceInsertNewTileRow() {
@@ -644,21 +658,18 @@ function renderNewRowTransition() {
     // end transition
     gameArea.gridOffsetY = 0;
     gameArea.onNewRowTransition = false;
-    gameArea.tileGrid
-      .flat()
-      .filter((tile) => tile instanceof Tile)
-      .forEach((tile) => {
-        if (!tile.isFalling) {
-          tile.row -= 1;
-          if (
-            gameArea.activeTile &&
-            gameArea.activeTile.getAllGroupMembers().includes(tile)
-          ) {
-            return;
-          }
-          tile.snapToGrid();
+    gameArea.getAllTilesInField().forEach((tile) => {
+      if (!tile.isFalling) {
+        tile.row -= 1;
+        if (
+          gameArea.activeTile &&
+          gameArea.activeTile.getAllGroupMembers().includes(tile)
+        ) {
+          return;
         }
-      });
+        tile.snapToGrid();
+      }
+    });
     gameArea.fallingTiles.flat().forEach((tile) => {
       tile.row -= 1;
     });
@@ -677,20 +688,17 @@ function renderNewRowTransition() {
   }
   gameArea.gridOffsetY = (elapsed / 1000) * tileGridOptions.rowHeight;
 
-  gameArea.tileGrid
-    .flat()
-    .filter((tile) => tile instanceof Tile)
-    .forEach((tile) => {
-      if (!tile.isFalling) {
-        if (
-          gameArea.activeTile &&
-          gameArea.activeTile.getAllGroupMembers().includes(tile)
-        ) {
-          return;
-        }
-        tile.snapToGrid();
+  gameArea.getAllTilesInField().forEach((tile) => {
+    if (!tile.isFalling) {
+      if (
+        gameArea.activeTile &&
+        gameArea.activeTile.getAllGroupMembers().includes(tile)
+      ) {
+        return;
       }
-    });
+      tile.snapToGrid();
+    }
+  });
 }
 
 function displayStar(number) {
@@ -701,23 +709,15 @@ function displayStar(number) {
   return innerHTML;
 }
 
-function getRandomTileNumber(currentScore) {
-  let { min, max } = tileNumberDistributionOptions[currentScore];
-  let arrayOfNumber = gameArea.tileGrid
-    .flat()
-    .filter((tile) => tile instanceof Tile)
-    .map((tile) => tile.number);
-  let leastNumberInGameArea = Math.min(...arrayOfNumber);
-  min = Math.min(min, leastNumberInGameArea);
-  return Math.floor(Math.random() * (max - min)) + min;
+function getRandomNumberWithRange(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function addLastRowWarning() {
   const warningColor = "#ad0000";
   const warningTime = 4000;
-  const warnedTiles = gameArea.tileGrid
-    .flat()
-    .filter((tile) => tile instanceof Tile)
+  const warnedTiles = gameArea
+    .getAllTilesInField()
     .filter((tile) => tile.row === 0);
   const timeRemaining = gameArea.nextNewRowTime - performance.now();
   gameArea.context.globalAlpha =
