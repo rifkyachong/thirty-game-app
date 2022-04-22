@@ -136,10 +136,10 @@ const gameArea = {
     gameArea.isStarted = false;
     clearTimeout(gameArea.newRowTimeoutId);
 
-    if (gameArea.score < 19) {
-      gameArea.openPage("gameOver");
-    } else {
+    if (gameArea.score === 30) {
       gameArea.openPage("youWin");
+    } else {
+      gameArea.openPage("gameOver");
     }
   },
   intervalId: null,
