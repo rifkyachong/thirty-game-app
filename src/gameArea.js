@@ -248,7 +248,7 @@ const gameArea = {
       .map((tile) => tile.number);
     this.score = Math.max(...arrayOfTileNumber);
     if (prevScore !== this.score) {
-      this.gameDisplays.scoreTile.style.backgroundImage = `url(../tiles/tile${this.score}.png)`;
+      this.gameDisplays.scoreTile.style.backgroundImage = `url(./tiles/tile${this.score}.png)`;
     }
     if (gameArea.score === 30) {
       gameArea.terminateGame();
@@ -746,7 +746,7 @@ function renderImagesOffScreen() {
       tmpCanvasCtx.drawImage(img, 0, 0);
     };
 
-    img.src = `./tiles/tile${i}`;
+    img.src = `./tiles/tile${i}.png`;
   }
 }
 
