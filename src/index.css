@@ -40,6 +40,10 @@ footer {
   border-radius: 8px;
 }
 
+#game-area > canvas {
+  padding: 8px;
+}
+
 #game-intro, #difficulty-setting, #game-over, #you-win, #game-pause {
   position: absolute;
   top: 0;

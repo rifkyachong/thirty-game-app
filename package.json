@@ -1,14 +1,19 @@
 {
-  "name": "template",
+  "name": "twenty-game-app",
   "version": "1.0.0",
-  "description": "",
-  "main": "./index.js",
+  "description": "An addictive game of matching the tile with the same number",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack",
-    "start": "webpack serve",
-    "watch": "webpack --watch"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Rifky Marcelio",
-  "license": "ISC"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rifkyachong/twenty-game-app.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rifkyachong/twenty-game-app/issues"
+  },
+  "homepage": "https://github.com/rifkyachong/twenty-game-app#readme"
 }
