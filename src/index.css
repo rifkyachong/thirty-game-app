@@ -11,6 +11,17 @@ h1 {
   color: red;
 }
 
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+}
+
+main {
+  justify-content: center;
+}
+
 #game-container {
   width: 506px;
 }
