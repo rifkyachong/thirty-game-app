@@ -573,7 +573,7 @@ function insertNewTiesBasedOnDifficulty() {
       break;
     }
     case 6: {
-      insertTies(4, 4, 3);
+      insertTies(3, 3, 3);
       break;
     }
     case 7: {
