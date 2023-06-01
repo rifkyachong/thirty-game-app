@@ -84,14 +84,12 @@ function Tile(initialRow, initialColumn, initialNumber) {
   this.getRowColumnPosition = function () {
     return [this.row, this.column];
   };
-
   this.isSameGroupWith = function (tile) {
     return this.getAllGroupMembers().includes(tile);
   };
   this.isSameNumberWith = function (tile) {
     return this.number === tile.number;
   };
-
   this.tieWithTopTile = function () {
     const tile =
       gameArea.tileGrid[this.row - 1] &&
@@ -156,7 +154,6 @@ function Tile(initialRow, initialColumn, initialNumber) {
     }
     return seperatedTiles.map((tile) => tile.getAllGroupMembers());
   };
-
   this.moveToCoordinate = function (newX, newY) {
     const tiles = this.getAllGroupMembers();
     let xChange = newX - this.x;
@@ -237,13 +234,12 @@ function Tile(initialRow, initialColumn, initialNumber) {
       this.row * tileGridOptions.rowHeight - gameArea.gridOffsetY
     );
   };
-
-  this.getTilesStackedAbove = function () {
-    const tiles = this.getAllGroupMembers();
+  this.getGroupOfTilesAboveThis = function () {
+    const thisGroupTile = this.getAllGroupMembers();
     let stackedTile = [];
-    tiles.forEach((tile) => {
+    thisGroupTile.forEach((tile) => {
       let { topTile } = tile.getAdjacentTile();
-      if (topTile && !tiles.includes(topTile)) {
+      if (topTile && !thisGroupTile.includes(topTile)) {
         if (
           !this.tileIsAlreadyIncluded(stackedTile, topTile.getAllGroupMembers())
         )
@@ -257,7 +253,7 @@ function Tile(initialRow, initialColumn, initialNumber) {
     let tileQueue = [this];
     while (tileQueue.length > 0) {
       let tile = tileQueue.shift();
-      let stackedTile = tile.getTilesStackedAbove();
+      let stackedTile = tile.getGroupOfTilesAboveThis();
       stackedTile.forEach((groupTile) => {
         if (!groupTile[0].isVisited) {
           allStackedTile.push(groupTile);

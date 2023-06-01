@@ -19,8 +19,9 @@ const gameArea = {
   gameDisplays: {
     timerBar: document.getElementById("time-bar"),
     scoreTile: document.getElementById("score-tile"),
-    starDifficulty: document.getElementById("display-star-difficulty"),
-    textDisplay: document.getElementById("display-info"),
+    displayDifficulty: document.getElementById("display-difficulty"),
+    textDisplay: document.getElementById("text-display"),
+    difficultyInfo: document.getElementById("difficulty-info")
   },
   canvas: document.createElement("canvas"),
   context: null,
@@ -68,6 +69,8 @@ const gameArea = {
 
     gameArea.isStarted = true;
     gameArea.intervalId = window.requestAnimationFrame(reRenderGameArea);
+    gameArea.newRowBaseInterval = gameDifficultySettings[gameArea.mode].timePerNewRowPerStage[0];
+    gameArea.newRowInterval = gameDifficultySettings[gameArea.mode].timePerNewRowPerStage[0];
     gameArea.newRowTimeoutId = setTimeout(
       insertNewTileRow,
       gameArea.newRowInterval
@@ -114,11 +117,11 @@ const gameArea = {
   quit: function () {
     gameArea.clear();
 
-    const { timerBar, scoreTile, starDifficulty } = gameArea.gameDisplays;
+    const { timerBar, scoreTile, displayDifficulty } = gameArea.gameDisplays;
     timerBar.style.backgroundImage = "none";
     scoreTile.style.backgroundImage = "";
-    starDifficulty.innerHTML = "";
-    gameArea.starDifficulty = null;
+    displayDifficulty.innerHTML = "";
+    gameArea.stageLevel = null;
 
     gameArea.canvas.style.filter = "";
     gameArea.isPaused = false;
@@ -236,8 +239,8 @@ const gameArea = {
   },
   score: null,
   newRowTimeoutId: null,
-  newRowBaseInterval: 15000,
-  newRowInterval: 15000,
+  newRowBaseInterval: null,
+  newRowInterval: null,
   newRowAnimationDuration: 1000,
   nextNewRowTime: null,
   timeRemaining: null,
@@ -257,7 +260,7 @@ const gameArea = {
   onNewRowTransition: false,
   gridOffsetY: 0,
   mode: null,
-  starDifficulty: null,
+  stageLevel: null,
   renderTimer: function () {
     const { nextNewRowTime, newRowInterval, newRowBaseInterval } = gameArea;
     const { timerBar } = gameArea.gameDisplays;
@@ -276,39 +279,17 @@ const gameArea = {
       timerBar.style.backgroundImage = `linear-gradient(to right, ${color1} ${color2Stop}%, ${color3} ${color2Stop}%)`;
     }
   },
-  updateDifficulty: function () {
-    let prevDifficulty = gameArea.starDifficulty;
-    let newDifficulty = gameArea.determineDifficulty();
-    if (newDifficulty !== prevDifficulty) {
-      gameArea.starDifficulty = newDifficulty;
-      gameArea.gameDisplays.starDifficulty.innerHTML =
-        displayStar(newDifficulty);
-      gameArea.newRowInterval = timePerNewRowPerDifficulty[newDifficulty];
-      if (prevDifficulty) {
-        newDifficulty > prevDifficulty
-          ? gameArea.logTextDisplay("Difficulty Increased!!")
-          : gameArea.logTextDisplay("Difficulty Decreased!!");
-      }
+  updateStage: function () {
+    let prevStage = gameArea.stageLevel;
+    let newStage = gameArea.determineStage();
+    if (newStage !== prevStage) {
+      gameArea.stageLevel = newStage;
+      gameArea.gameDisplays.displayDifficulty.innerHTML = gameArea.mode
+      gameArea.newRowInterval = gameDifficultySettings[gameArea.mode].timePerNewRowPerStage[newStage - 1];
     }
   },
-  determineDifficulty: function () {
-    let baseDifficulty;
-    let additionalDifficulty = Math.max(0, Math.floor(this.score / 5) - 1);
-    switch (this.mode) {
-      case "normal":
-        baseDifficulty = 1;
-        break;
-      case "hard":
-        baseDifficulty = 2;
-        break;
-      case "very hard":
-        baseDifficulty = 3;
-        break;
-      default:
-        throw new Error("no difficulty available");
-    }
-
-    return additionalDifficulty + baseDifficulty;
+  determineStage: function () {
+    return Math.max(0, Math.floor(this.score / 5) - 1) + 1;
   },
   openPage: function (pageName) {
     const targetPage = gameArea.gamePages[pageName];
@@ -398,34 +379,34 @@ function addButtonsFunctionality() {
     toQuit,
   } = gameArea.gameButtons;
 
+  const { difficultyInfo } = gameArea.gameDisplays;
+
   toSetDifficulty.onclick = () => {
     gameArea.openPage("setDifficulty");
   };
 
-  const [chooseNormal, chooseHard, chooseVeryHard] = toChooseDifficulty;
   resetDifficulty = () => {
     toChooseDifficulty.forEach((btn) => {
       btn.classList.remove("selected");
+      [...difficultyInfo.children].forEach(infoHtml => {
+        infoHtml.classList.remove("d-block");
+        infoHtml.classList.add("d-none");
+
+      })
     });
   };
-  chooseNormal.onclick = () => {
-    gameArea.mode = "normal";
-    resetDifficulty();
-    chooseNormal.classList.add("selected");
-    toStart[0].disabled = false;
-  };
-  chooseHard.onclick = () => {
-    gameArea.mode = "hard";
-    resetDifficulty();
-    chooseHard.classList.add("selected");
-    toStart[0].disabled = false;
-  };
-  chooseVeryHard.onclick = () => {
-    gameArea.mode = "very hard";
-    resetDifficulty();
-    chooseVeryHard.classList.add("selected");
-    toStart[0].disabled = false;
-  };
+
+  toChooseDifficulty.forEach((btn, i) => {
+    btn.onclick = function() {
+      gameArea.mode = gameDifficultyOptions[i];
+      resetDifficulty();
+      btn.classList.add("selected");
+      difficultyInfo.children[i].classList.remove("d-none");
+      difficultyInfo.children[i].classList.add("d-block");
+      toStart[0].disabled = false;
+
+    }
+  })
 
   toStart.forEach((button) => {
     button.onclick = gameArea.start;
@@ -452,7 +433,7 @@ function reRenderGameArea() {
   gameArea.clear();
 
   gameArea.updateScore();
-  gameArea.updateDifficulty();
+  gameArea.updateStage();
   gameArea.renderTimer();
   if (checkIfAllNumbersAreUnique()) {
     forceInsertNewTileRow();
@@ -543,45 +524,21 @@ function determineAllowedRangeOfNumber() {
     .map((tile) => tile.number);
   const leastNumberInField = Math.min(...arrayOfNumber);
 
-  let { min: allowedMin, max: allowedMax } =
-    tileNumberDistributionOptions[currentScore];
+  tileNumberDistributionRule = gameDifficultySettings[gameArea.mode].tileNumberDistributionOptions;
+
+  let { min: allowedMin, max: allowedMax } = tileNumberDistributionRule[currentScore];
   allowedMin = Math.min(leastNumberInField, allowedMin);
 
   return [allowedMin, allowedMax];
 }
 
 function insertNewTiesBasedOnDifficulty() {
-  // for difficulty
-  switch (gameArea.starDifficulty) {
-    case 1:
-      // no ties
-      break;
-    case 2: {
-      insertTies(2, 2, 2);
-      break;
-    }
-    case 3: {
-      insertTies(3, 2, 2);
-      break;
-    }
-    case 4: {
-      insertTies(3, 3, 2);
-      break;
-    }
-    case 5: {
-      insertTies(4, 3, 2);
-      break;
-    }
-    case 6: {
-      insertTies(3, 3, 3);
-      break;
-    }
-    case 7: {
-      insertTies(4, 4, 3);
-      break;
-    }
-    default: {
-    }
+  if (gameArea.stageLevel > 1 && gameArea.stageLevel < 6) {
+    let setting = gameDifficultySettings[gameArea.mode].insertTiesRule[gameArea.stageLevel - 1];
+    insertTies(...setting);
+  }
+  else {
+    //do nothing
   }
 }
 
@@ -595,8 +552,11 @@ function insertTies(maxNumOfTies, maxNumOfMemberGroup, numOfRowAffected = 2) {
   }
 
   let numOfTiesLeft = maxNumOfTies;
+  let maxNumberOfIteration = maxNumOfTies * 2;
+  let iteration = 0;
   let allowedTiles = getAllowedTiles();
-  while (numOfTiesLeft > 0 && allowedTiles.length > 0) {
+  while (numOfTiesLeft > 0 && allowedTiles.length > 0 && iteration < maxNumberOfIteration) {
+    iteration++;
     let selectedTile =
       allowedTiles[Math.floor(Math.random() * allowedTiles.length)];
     if (Math.random() < 0.5) {
@@ -608,7 +568,8 @@ function insertTies(maxNumOfTies, maxNumOfMemberGroup, numOfRowAffected = 2) {
         rightTile &&
         rightTile.getAllGroupMembers().length +
           selectedTile.getAllGroupMembers().length <=
-          maxNumOfMemberGroup
+          maxNumOfMemberGroup &&
+        !rightTile.getAllGroupMembers().includes(gameArea.activeTile) 
       ) {
         selectedTile.tieWithRightTile();
         numOfTiesLeft -= 1;
